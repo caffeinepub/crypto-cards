@@ -1,73 +1,37 @@
 {
   "kind": "build_request",
-  "title": "Make the public ICP (.ic0.app) link easy to find and copy in the UI",
+  "title": "Enable stable backend build/deploy metadata updates for Live publishing verification",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-9",
-      "text": "Expose the existing Live App Status UI in the main app so users can easily find the live deployment link and backend deployment metadata without needing developer tools.",
-      "target": "frontend",
+      "id": "REQ-12",
+      "text": "Add a backend (Motoko) admin-only update method for canister build/deploy metadata so the Live Status UI can reliably verify what version is running after publishing to Live.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-4",
-          "msg-9"
+          "msg-1"
         ],
         "quotes": [
-          "Yes help make icp link appear",
           "Yes"
         ]
       },
       "acceptanceCriteria": [
-        "A visible entry point exists in the main navigation/tab layout that renders the existing LivePublishStatus component for all users (not admin-only).",
-        "Users can reach the Live App Status section in at most 1 click from the main screen.",
-        "All user-facing strings in this surfaced section are in English."
-      ]
-    },
-    {
-      "id": "REQ-10",
-      "text": "Update the Live App Status UI to display both (a) the current site origin and (b) the derived public IC gateway URL in the format https://<canister-id>.ic0.app when the canister ID is available at runtime/build-time, each with a one-click copy-to-clipboard action and clear success/failure toasts.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "Yes help make icp link appear"
-        ]
-      },
-      "acceptanceCriteria": [
-        "The UI shows a field for “Current Site Origin” populated from window.location.origin with a Copy button; copy success and failure show English toasts.",
-        "When a canister ID is available to the frontend at runtime/build-time (e.g., via existing generated bindings or environment/build constants), the UI shows “Public ICP Link” as https://<canister-id>.ic0.app with its own Copy button and English toasts.",
-        "If the canister ID is not available, the UI does not crash; it shows an English “Not available” (or equivalent) state for the public ICP link."
-      ]
-    },
-    {
-      "id": "REQ-11",
-      "text": "Add a user-facing “Go Live / Get ICP App Link” help section in the UI that explains in English how to publish the current Draft to Live in Caffeine and where to find/copy the resulting public Internet Computer app link.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "Yes help make icp link appear"
-        ]
-      },
-      "acceptanceCriteria": [
-        "The help section is accessible from the same place as Live App Status (or directly adjacent to it).",
-        "The help text clearly explains: (1) publishing Draft to Live in Caffeine, (2) where the Live link appears, and (3) that the public ICP gateway link uses the format https://<canister-id>.ic0.app.",
-        "All help text is in English and does not reference internal-only tools (e.g., does not require command-line usage)."
+        "backend/main.mo exposes a new shared method (admin-only) that updates canisterBuildMetadata (commitHash, buildTime, dfxVersion).",
+        "Calling the new update method as a non-admin traps with an English Unauthorized message.",
+        "getCanisterBuildMetadata continues to be a public query and always returns a valid CanisterBuildMetadata record with sensible defaults when fields have not been set (commitHash=\"\", buildTime=0, dfxVersion=\"\").",
+        "The existing frontend query useGetCanisterBuildMetadata (frontend/src/hooks/useQueries.ts) continues to work without any candid/type mismatches."
       ]
     }
   ],
   "constraints": [
-    "Do not modify any files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or any files in frontend/src/components/ui (immutable paths).",
-    "Keep the backend as a single Motoko actor in backend/main.mo; add migration.mo only if an actual state upgrade is required (not expected for this change)."
+    "Backend must remain a single-actor Motoko canister (all logic in backend/main.mo).",
+    "Do not modify any frontend files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or any files in frontend/src/components/ui.",
+    "Use English for any user-facing text."
   ],
   "nonGoals": [
-    "Do not implement or automate the actual Caffeine platform publishing (Draft → Live) process in code; only provide UI visibility and English guidance.",
-    "Do not add third-party authentication providers or external services.",
-    "Do not change gameplay, wallet, payment, lobby, or tournament logic as part of this request."
+    "Implementing the actual Caffeine platform 'Publish to Live' action inside the app UI.",
+    "Adding new authentication providers beyond Internet Identity.",
+    "Changing gameplay, wallet, deposit/withdrawal, or lobby/tournament behavior."
   ],
   "imageRequirements": {
     "required": [],

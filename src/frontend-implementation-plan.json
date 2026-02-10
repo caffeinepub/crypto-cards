@@ -1,65 +1,6 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Surface Live App Status and copyable public ic0.app link in the main UI",
-  "requirements": [
-    {
-      "id": "REQ-9",
-      "summary": "Add a visible, non-admin entry point in the main tab navigation to access the existing Live App Status UI within 1 click.",
-      "acceptanceCriteria": [
-        "A visible entry point exists in the main navigation/tab layout that renders the existing LivePublishStatus component for all users (not admin-only).",
-        "Users can reach the Live App Status section in at most 1 click from the main screen.",
-        "All user-facing strings in this surfaced section are in English."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Wire the existing LivePublishStatus UI into the main Tabs layout by adding a new always-visible tab (e.g., “Live Status”) and a corresponding TabsContent so all users can access it from the main screen in 1 click; adjust the TabsList grid column logic to account for the extra tab (and admin tab when present)."
-        }
-      ]
-    },
-    {
-      "id": "REQ-10",
-      "summary": "Enhance Live App Status to show copyable Current Site Origin and derived Public ICP Link (ic0.app) with robust canister-id detection and English toasts.",
-      "acceptanceCriteria": [
-        "The UI shows a field for “Current Site Origin” populated from window.location.origin with a Copy button; copy success and failure show English toasts.",
-        "When a canister ID is available to the frontend at runtime/build-time (e.g., via existing generated bindings or environment/build constants), the UI shows “Public ICP Link” as https://<canister-id>.ic0.app with its own Copy button and English toasts.",
-        "If the canister ID is not available, the UI does not crash; it shows an English “Not available” (or equivalent) state for the public ICP link."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/utils/icpLinks.ts",
-          "operation": "create",
-          "description": "Add small, UI-safe helpers to (1) read the current site origin from window.location.origin and (2) attempt to resolve the deployed canister ID from available frontend build/runtime constants (without crashing when missing) and derive a public IC gateway URL in the format https://<canister-id>.ic0.app."
-        },
-        {
-          "path": "frontend/src/components/LivePublishStatus.tsx",
-          "operation": "modify",
-          "description": "Update the existing LivePublishStatus card to: (a) rename/adjust labels to English “Current Site Origin” and “Public ICP Link”, (b) render both values (origin always, ic0.app link when canister ID is available), (c) add separate one-click copy actions for each field using navigator.clipboard with clear English success/failure toasts via sonner, and (d) show an English non-crashing “Not available” state when the canister ID cannot be resolved."
-        }
-      ]
-    },
-    {
-      "id": "REQ-11",
-      "summary": "Add an adjacent English help section explaining Draft→Live publishing in Caffeine and where to find/copy the public ICP app link.",
-      "acceptanceCriteria": [
-        "The help section is accessible from the same place as Live App Status (or directly adjacent to it).",
-        "The help text clearly explains: (1) publishing Draft to Live in Caffeine, (2) where the Live link appears, and (3) that the public ICP gateway link uses the format https://<canister-id>.ic0.app.",
-        "All help text is in English and does not reference internal-only tools (e.g., does not require command-line usage)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/GoLiveHelp.tsx",
-          "operation": "create",
-          "description": "Create a user-facing help component that explains (in English, no CLI/dev-tools references) how to publish Draft to Live in Caffeine, where users can find the Live App Status section in the app, and that the public ICP gateway link format is https://<canister-id>.ic0.app."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Render the new GoLiveHelp section in the same tab/section as LivePublishStatus (adjacent on the page, e.g., below it in the Live Status tab content) so users can access guidance from the same place they copy links."
-        }
-      ]
-    }
-  ]
+  "title": "Stable Live publishing build/deploy metadata verification (frontend-only)",
+  "requirements": []
 }

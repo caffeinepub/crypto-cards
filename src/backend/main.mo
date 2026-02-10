@@ -53,7 +53,34 @@ actor {
     flexaDepositId : ?Text;
   };
 
+  type PersistentLobby = {
+    id : Nat;
+    creator : Principal;
+    wagerAmount : Nat;
+    maxPlayers : Nat;
+    players : [Principal];
+    isActive : Bool;
+    chatMessages : [ChatMessage];
+    botCount : Nat;
+    gameType : { #spades; #omaha4Card };
+    mode : { #forFun; #forReal };
+    waitingForPlayers : Bool;
+    createdAt : Int;
+    flexaDepositId : ?Text;
+  };
+
   type Tournament = {
+    id : Nat;
+    creator : Principal;
+    entryFee : Nat;
+    participants : [Principal];
+    rounds : Nat;
+    isActive : Bool;
+    leaderboard : [LeaderboardEntry];
+    gameType : { #spades; #omaha4Card };
+  };
+
+  type PersistentTournament = {
     id : Nat;
     creator : Principal;
     entryFee : Nat;
@@ -282,6 +309,19 @@ actor {
     dfxVersion = ""; // Will be set during deployment
   };
 
+  /// Set canister build/deploy metadata (admin-only)
+  public shared ({ caller }) func setCanisterBuildMetadata(commitHash : Text, buildTime : Int, dfxVersion : Text) : async () {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Access denied: Only admin can update build metadata");
+    };
+    canisterBuildMetadata := {
+      commitHash;
+      buildTime;
+      dfxVersion;
+    };
+  };
+
+  /// Get canister build/deploy metadata (public)
   public query ({ caller }) func getCanisterBuildMetadata() : async CanisterBuildMetadata {
     canisterBuildMetadata;
   };
