@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-fix-the-backend-frontend-candid-api-mismatch-for-saving-the-caller-user-profile-so-the-app-can-build-and-run-without-method-not-found-errors",
-      "featureTitle": "Fix the backend ↔ frontend candid/API mismatch for saving the caller user profile so the app can build and run without method-not-found errors.",
+      "featureId": "feature-expose-the-existing-live-app-status-ui-in-the-main-app-so-users-can-easily-find-the-live-deployment-link-and-backend-deployment-metadata-without-needing-developer-tools",
+      "featureTitle": "Expose the existing Live App Status UI in the main app so users can easily find the live deployment link and backend deployment metadata without needing developer tools.",
       "files": [
-        "frontend/src/hooks/useQueries.ts"
+        "frontend/src/App.tsx"
       ],
       "components": [
         "authorization@3.0.0",
@@ -21,16 +21,16 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-6"
+        "REQ-9"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-make-backend-connectivity-state-and-error-reporting-accurate-by-implementing-real-retry-error-tracking-in-useactorwithretry-without-modifying-any-immutable-hook-files",
-      "featureTitle": "Make backend connectivity state and error reporting accurate by implementing real retry/error tracking in useActorWithRetry, without modifying any immutable hook files.",
+      "featureId": "feature-update-the-live-app-status-ui-to-display-both-a-the-current-site-origin-and-b-the-derived-public-ic-gateway-url-in-the-format-https-canister-id-ic0-app-when-the-canister-id-is-available-at-runtime-build-time-each-with-a-one-click-copy-to-clipboard-action-and-clear-success-failure-toasts",
+      "featureTitle": "Update the Live App Status UI to display both (a) the current site origin and (b) the derived public IC gateway URL in the format https://<canister-id>.ic0.app when the canister ID is available at runtime/build-time, each with a one-click copy-to-clipboard action and clear success/failure toasts.",
       "files": [
-        "frontend/src/components/BackendConnectivityIndicator.tsx",
-        "frontend/src/hooks/useActorWithRetry.ts"
+        "frontend/src/components/LivePublishStatus.tsx",
+        "frontend/src/utils/icpLinks.ts"
       ],
       "components": [
         "authorization@3.0.0",
@@ -46,7 +46,32 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-7"
+        "REQ-10"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-a-user-facing-go-live-get-icp-app-link-help-section-in-the-ui-that-explains-in-english-how-to-publish-the-current-draft-to-live-in-caffeine-and-where-to-find-copy-the-resulting-public-internet-computer-app-link-2",
+      "featureTitle": "Add a user-facing “Go Live / Get ICP App Link” help section in the UI that explains in English how to publish the current Draft to Live in Caffeine and where to find/copy the resulting public Internet Computer app link.",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/components/GoLiveHelp.tsx"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "http-outcalls@3.0.0",
+        "stripe@3.0.0",
+        "blob-storage@4.0.0",
+        "qr-code@1.0.0",
+        "camera@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-11"
       ],
       "confidence": "high"
     }

@@ -1,42 +1,63 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Frontend fixes for canister API mismatch and backend connectivity retry/error reporting",
+  "title": "Surface Live App Status and copyable public ic0.app link in the main UI",
   "requirements": [
     {
-      "id": "REQ-6",
-      "summary": "Update frontend user-profile saving hook to call the canister method that actually exists, eliminating method-not-found build/runtime failures.",
+      "id": "REQ-9",
+      "summary": "Add a visible, non-admin entry point in the main tab navigation to access the existing Live App Status UI within 1 click.",
       "acceptanceCriteria": [
-        "Backend exposes a public method named saveUserProfile (or frontend no longer calls saveUserProfile) so that frontend/src/hooks/useQueries.ts useSaveCallerUserProfile does not call a non-existent canister method.",
-        "The save user profile flow succeeds end-to-end in \"Play for Real\" mode: saving a profile updates canister state and subsequent getCallerUserProfile returns the saved value.",
-        "Type generation/build completes successfully with no candid/type errors related to UserProfile saving."
+        "A visible entry point exists in the main navigation/tab layout that renders the existing LivePublishStatus component for all users (not admin-only).",
+        "Users can reach the Live App Status section in at most 1 click from the main screen.",
+        "All user-facing strings in this surfaced section are in English."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useQueries.ts",
+          "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Fix the user profile save mutation to call the generated canister method name (saveCallerUserProfile) instead of the non-existent saveUserProfile, keeping the rest of the React Query invalidation flow intact."
+          "description": "Wire the existing LivePublishStatus UI into the main Tabs layout by adding a new always-visible tab (e.g., “Live Status”) and a corresponding TabsContent so all users can access it from the main screen in 1 click; adjust the TabsList grid column logic to account for the extra tab (and admin tab when present)."
         }
       ]
     },
     {
-      "id": "REQ-7",
-      "summary": "Implement accurate backend connectivity error/retry state in useActorWithRetry while respecting immutable hook/component constraints.",
+      "id": "REQ-10",
+      "summary": "Enhance Live App Status to show copyable Current Site Origin and derived Public ICP Link (ic0.app) with robust canister-id detection and English toasts.",
       "acceptanceCriteria": [
-        "frontend/src/hooks/useActorWithRetry.ts sets isError and error when actor creation fails, and reflects retryCount/isRetrying during retry attempts.",
-        "BackendConnectivityIndicator displays \"Backend: Not Connected\" along with a meaningful English error message when the backend cannot be reached.",
-        "No changes are made to immutable paths (frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui/*)."
+        "The UI shows a field for “Current Site Origin” populated from window.location.origin with a Copy button; copy success and failure show English toasts.",
+        "When a canister ID is available to the frontend at runtime/build-time (e.g., via existing generated bindings or environment/build constants), the UI shows “Public ICP Link” as https://<canister-id>.ic0.app with its own Copy button and English toasts.",
+        "If the canister ID is not available, the UI does not crash; it shows an English “Not available” (or equivalent) state for the public ICP link."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useActorWithRetry.ts",
-          "operation": "modify",
-          "description": "Enhance the wrapper to derive real error state from the underlying React Query actor query (via the query cache), and implement retry tracking (retryCount/isRetrying) that triggers controlled refetch attempts of the actor query when creation fails; ensure state resets correctly on success and uses clear English Error messages."
+          "path": "frontend/src/utils/icpLinks.ts",
+          "operation": "create",
+          "description": "Add small, UI-safe helpers to (1) read the current site origin from window.location.origin and (2) attempt to resolve the deployed canister ID from available frontend build/runtime constants (without crashing when missing) and derive a public IC gateway URL in the format https://<canister-id>.ic0.app."
         },
         {
-          "path": "frontend/src/components/BackendConnectivityIndicator.tsx",
+          "path": "frontend/src/components/LivePublishStatus.tsx",
           "operation": "modify",
-          "description": "Adjust indicator messaging/rendering to reliably show \"Backend: Not Connected\" plus a meaningful English error message sourced from useActorWithRetry.error when connection/actor creation fails, while continuing to show retry progress when isRetrying is true."
+          "description": "Update the existing LivePublishStatus card to: (a) rename/adjust labels to English “Current Site Origin” and “Public ICP Link”, (b) render both values (origin always, ic0.app link when canister ID is available), (c) add separate one-click copy actions for each field using navigator.clipboard with clear English success/failure toasts via sonner, and (d) show an English non-crashing “Not available” state when the canister ID cannot be resolved."
+        }
+      ]
+    },
+    {
+      "id": "REQ-11",
+      "summary": "Add an adjacent English help section explaining Draft→Live publishing in Caffeine and where to find/copy the public ICP app link.",
+      "acceptanceCriteria": [
+        "The help section is accessible from the same place as Live App Status (or directly adjacent to it).",
+        "The help text clearly explains: (1) publishing Draft to Live in Caffeine, (2) where the Live link appears, and (3) that the public ICP gateway link uses the format https://<canister-id>.ic0.app.",
+        "All help text is in English and does not reference internal-only tools (e.g., does not require command-line usage)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/GoLiveHelp.tsx",
+          "operation": "create",
+          "description": "Create a user-facing help component that explains (in English, no CLI/dev-tools references) how to publish Draft to Live in Caffeine, where users can find the Live App Status section in the app, and that the public ICP gateway link format is https://<canister-id>.ic0.app."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Render the new GoLiveHelp section in the same tab/section as LivePublishStatus (adjacent on the page, e.g., below it in the Live Status tab content) so users can access guidance from the same place they copy links."
         }
       ]
     }

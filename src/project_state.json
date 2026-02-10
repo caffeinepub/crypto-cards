@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 7,
+  "projectStateVersion": 9,
   "summary": "Crypto Cards is a web dApp for playing card games (Spades and Pot Limit Omaha / “Omaha 4-card”) in two modes: (1) offline “Play for Fun” using browser localStorage with AI bots, and (2) “Play for Real” intended to use an Internet Computer (IC) Motoko canister for persistent profiles, balances, transactions, lobbies, admin controls, and payment flows. The frontend is a React + Tailwind (shadcn/ui) app using TanStack React Query for canister calls, integrates Internet Identity for IC authentication, and supports Web3 wallet connections (Coinbase/MetaMask injected providers plus a WalletConnect UI placeholder). The backend canister implements role-based access control, user/player profiles, deposits/withdrawals, lobby/tournament primitives, admin stats and house-cut configuration, Stripe checkout session outcalls, and a Flexa deposit lifecycle (initiate, poll status, cancel, and webhook processing with replay protection and authorized principals).",
   "architectural_notes": [
     "Frontend uses TanStack React Query with query-key based caching and explicit invalidation after mutations (balance/profile/transactions, admin stats, etc.).",
@@ -282,6 +282,30 @@
       "title": "Make backend connectivity state and error reporting accurate by implementing real retry/error tracking in useActorWithRetry, without modifying any immutable hook files.",
       "reqIds": [
         "REQ-7"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-expose-the-existing-live-app-status-ui-in-the-main-app-so-users-can-easily-find-the-live-deployment-link-and-backend-deployment-metadata-without-needing-developer-tools",
+      "title": "Expose the existing Live App Status UI in the main app so users can easily find the live deployment link and backend deployment metadata without needing developer tools.",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-live-app-status-ui-to-display-both-a-the-current-site-origin-and-b-the-derived-public-ic-gateway-url-in-the-format-https-canister-id-ic0-app-when-the-canister-id-is-available-at-runtime-build-time-each-with-a-one-click-copy-to-clipboard-action-and-clear-success-failure-toasts",
+      "title": "Update the Live App Status UI to display both (a) the current site origin and (b) the derived public IC gateway URL in the format https://<canister-id>.ic0.app when the canister ID is available at runtime/build-time, each with a one-click copy-to-clipboard action and clear success/failure toasts.",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-user-facing-go-live-get-icp-app-link-help-section-in-the-ui-that-explains-in-english-how-to-publish-the-current-draft-to-live-in-caffeine-and-where-to-find-copy-the-resulting-public-internet-computer-app-link-2",
+      "title": "Add a user-facing “Go Live / Get ICP App Link” help section in the UI that explains in English how to publish the current Draft to Live in Caffeine and where to find/copy the resulting public Internet Computer app link.",
+      "reqIds": [
+        "REQ-11"
       ],
       "version": 1
     }

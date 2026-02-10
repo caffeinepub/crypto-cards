@@ -1,34 +1,36 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T21:27:56.463Z",
-  "summary": "Frontend changes implement improved backend connectivity UI/state handling via useActorWithRetry and BackendConnectivityIndicator, and adjust useQueries to avoid calling a non-existent profile-save method. However, no backend changes are shown for the required candid/API fix and build metadata stability requirements.",
+  "generatedAt": "2026-02-10T22:30:01.785Z",
+  "summary": "Implemented a new always-visible \"Live Status\" entry point in the main tab UI, added a Go Live help card adjacent to Live App Status, and updated LivePublishStatus to show/copy the current site origin and a derived public ic0.app link (when resolvable) using English toasts. Also added utility helpers for origin, canister-id resolution, public link generation, and clipboard copy.",
   "missing_requirements": [
     {
-      "id": "REQ-6",
-      "requirement": "Backend exposes a public method named saveUserProfile (or frontend no longer calls saveUserProfile) and the save-profile flow succeeds end-to-end (saving updates canister state and getCallerUserProfile returns the saved value), with successful candid/type generation.",
-      "reason": "The diff shows a frontend-side change (per summary) to call a different backend method, but there is no evidence in the provided modified files that the backend candid/API now includes the required profile-save method or that canister state update + subsequent readback is implemented/fixed.",
+      "id": "REQ-10",
+      "requirement": "If the canister ID is not available, the UI shows an English “Not available” (or equivalent) state for the public ICP link (and does not crash).",
+      "reason": "The diff shows defensive null handling in copy action (toast error when link is missing) and link derivation returning null, but the truncated LivePublishStatus snippet does not explicitly show the rendered \"Not available\" UI state for the Public ICP Link field.",
       "evidence": [
-        "frontend/src/hooks/useQueries.ts (truncated)",
-        "frontend-file-summaries.txt (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-8",
-      "requirement": "backend/main.mo getCanisterBuildMetadata always returns a valid CanisterBuildMetadata record (never traps) and returns safe defaults (empty strings, buildTime=0) when unset.",
-      "reason": "No backend files (e.g., backend/main.mo) are included in the modified file list or shown with changes; therefore there is no evidence that getCanisterBuildMetadata was made stable or defaulted.",
-      "evidence": [
-        "File diff summary (Modified FILES list shows no backend/main.mo)"
+        "frontend/src/components/LivePublishStatus.tsx",
+        "frontend/src/utils/icpLinks.ts"
       ]
     }
   ],
-  "hallucinated_features": [],
-  "confidence": 0.74,
+  "hallucinated_features": [
+    {
+      "description": "Wallet dashboard/internal wallet logic adjustments unrelated to exposing/copying the public ICP link and help text.",
+      "reason": "BuildRequest explicitly scoped changes to UI visibility/guidance for the public ICP link and Live App Status; WalletSection changes are not requested by REQ-9/10/11.",
+      "evidence": [
+        "frontend/src/components/WalletSection.tsx"
+      ]
+    }
+  ],
+  "confidence": 0.62,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/components/BackendConnectivityIndicator.tsx",
-    "frontend/src/hooks/useActorWithRetry.ts",
-    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/App.tsx",
+    "frontend/src/components/GoLiveHelp.tsx",
+    "frontend/src/components/LivePublishStatus.tsx",
+    "frontend/src/components/WalletSection.tsx",
+    "frontend/src/utils/icpLinks.ts",
     "project_state.json"
   ]
 }

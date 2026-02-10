@@ -12,6 +12,8 @@ import ProfileSetupModal from './components/ProfileSetupModal';
 import QuickPlayGame from './components/QuickPlayGame';
 import WalletInstallModal from './components/WalletInstallModal';
 import WalletConnectModal from './components/WalletConnectModal';
+import LivePublishStatus from './components/LivePublishStatus';
+import GoLiveHelp from './components/GoLiveHelp';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useWeb3Wallet } from './hooks/useWeb3Wallet';
 import { useQuery } from '@tanstack/react-query';
@@ -101,6 +103,10 @@ function AppContent() {
     );
   }
 
+  // Calculate grid columns based on number of tabs
+  const tabCount = isAdmin ? 5 : 4;
+  const gridCols = `grid-cols-${tabCount}`;
+
   return (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
       <div className="flex min-h-screen flex-col bg-background">
@@ -109,10 +115,11 @@ function AppContent() {
         <main className="flex-1 container mx-auto px-4 py-8">
           <ProfileSetupModal gameMode={gameMode} />
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className={`grid w-full max-w-2xl mx-auto ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'} mb-8`}>
+            <TabsList className={`grid w-full max-w-3xl mx-auto ${gridCols} mb-8`}>
               <TabsTrigger value="lobbies">Game Lobbies</TabsTrigger>
               <TabsTrigger value="tournaments">Tournaments</TabsTrigger>
               <TabsTrigger value="wallet">Wallet & Stats</TabsTrigger>
+              <TabsTrigger value="live-status">Live Status</TabsTrigger>
               {isAdmin && <TabsTrigger value="admin">Admin</TabsTrigger>}
             </TabsList>
 
@@ -126,6 +133,11 @@ function AppContent() {
 
             <TabsContent value="wallet" className="space-y-6">
               <WalletSection gameMode={gameMode} />
+            </TabsContent>
+
+            <TabsContent value="live-status" className="space-y-6">
+              <LivePublishStatus />
+              <GoLiveHelp />
             </TabsContent>
 
             {isAdmin && (
