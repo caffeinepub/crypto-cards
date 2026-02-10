@@ -1,0 +1,90 @@
+{
+  "kind": "build_request",
+  "title": "Fix deployment-blocking backend/frontend API mismatches and improve backend connection error handling",
+  "priority": "high",
+  "requirements": [
+    {
+      "id": "REQ-6",
+      "text": "Fix the backend ↔ frontend candid/API mismatch for saving the caller user profile so the app can build and run without method-not-found errors.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-3"
+        ],
+        "quotes": [
+          "Ok can you fix it"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Backend exposes a public method named saveUserProfile (or frontend no longer calls saveUserProfile) so that frontend/src/hooks/useQueries.ts useSaveCallerUserProfile does not call a non-existent canister method.",
+        "The save user profile flow succeeds end-to-end in \"Play for Real\" mode: saving a profile updates canister state and subsequent getCallerUserProfile returns the saved value.",
+        "Type generation/build completes successfully with no candid/type errors related to UserProfile saving."
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "text": "Make backend connectivity state and error reporting accurate by implementing real retry/error tracking in useActorWithRetry, without modifying any immutable hook files.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-2",
+          "msg-3"
+        ],
+        "quotes": [
+          "🙏 We hit a snag during deployment",
+          "Ok can you fix it"
+        ]
+      },
+      "acceptanceCriteria": [
+        "frontend/src/hooks/useActorWithRetry.ts sets isError and error when actor creation fails, and reflects retryCount/isRetrying during retry attempts.",
+        "BackendConnectivityIndicator displays \"Backend: Not Connected\" along with a meaningful English error message when the backend cannot be reached.",
+        "No changes are made to immutable paths (frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui/*)."
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "text": "Ensure the backend build/deploy metadata endpoint is stable and returns sensible defaults so the Live App Status UI does not break during deployment troubleshooting.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-2",
+          "msg-3"
+        ],
+        "quotes": [
+          "🙏 We hit a snag during deployment",
+          "Ok can you fix it"
+        ]
+      },
+      "acceptanceCriteria": [
+        "backend/main.mo getCanisterBuildMetadata always returns a valid CanisterBuildMetadata record (never traps).",
+        "If build metadata values are not set at deploy time, the endpoint returns empty strings and a buildTime of 0 as safe defaults that the frontend can render as \"Not available\".",
+        "The frontend Live App Status section loads without runtime errors whether the backend is reachable or not."
+      ]
+    }
+  ],
+  "constraints": [
+    "Backend must remain a single Motoko actor with all logic in backend/main.mo.",
+    "Generate backend/migration.mo only if a state migration is strictly necessary for these fixes.",
+    "Do not modify any frontend immutable paths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui/*.",
+    "Use English for any user-facing text."
+  ],
+  "nonGoals": [
+    "Implementing missing real-mode lobby/tournament/chat endpoints that are currently stubbed in frontend hooks.",
+    "Changing wager/balance unit conventions (cents vs wei/ETH) beyond what is required to fix the deployment issue.",
+    "Adding new payment providers or third-party authentication methods."
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
+  }
+}

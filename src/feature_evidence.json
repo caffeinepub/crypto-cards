@@ -1,0 +1,54 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-fix-the-backend-frontend-candid-api-mismatch-for-saving-the-caller-user-profile-so-the-app-can-build-and-run-without-method-not-found-errors",
+      "featureTitle": "Fix the backend ↔ frontend candid/API mismatch for saving the caller user profile so the app can build and run without method-not-found errors.",
+      "files": [
+        "frontend/src/hooks/useQueries.ts"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "http-outcalls@3.0.0",
+        "stripe@3.0.0",
+        "blob-storage@4.0.0",
+        "qr-code@1.0.0",
+        "camera@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-6"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-make-backend-connectivity-state-and-error-reporting-accurate-by-implementing-real-retry-error-tracking-in-useactorwithretry-without-modifying-any-immutable-hook-files",
+      "featureTitle": "Make backend connectivity state and error reporting accurate by implementing real retry/error tracking in useActorWithRetry, without modifying any immutable hook files.",
+      "files": [
+        "frontend/src/components/BackendConnectivityIndicator.tsx",
+        "frontend/src/hooks/useActorWithRetry.ts"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "http-outcalls@3.0.0",
+        "stripe@3.0.0",
+        "blob-storage@4.0.0",
+        "qr-code@1.0.0",
+        "camera@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-7"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

@@ -1,0 +1,516 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Dark theme with vibrant purple/blue colors - OKLCH format for Tailwind compatibility */
+    --background: 0.2 0.05 265;
+    --foreground: 0.98 0.01 265;
+    --card: 0.2 0.05 265;
+    --card-foreground: 0.98 0.01 265;
+    --popover: 0.2 0.05 265;
+    --popover-foreground: 0.98 0.01 265;
+    
+    /* Vibrant purple primary color */
+    --primary: 0.6 0.25 290;
+    --primary-foreground: 0.98 0.01 265;
+    
+    --secondary: 0.3 0.05 265;
+    --secondary-foreground: 0.98 0.01 265;
+    --muted: 0.3 0.05 265;
+    --muted-foreground: 0.65 0.02 265;
+    
+    /* Vibrant blue accent color */
+    --accent: 0.65 0.2 250;
+    --accent-foreground: 0.98 0.01 265;
+    
+    --destructive: 0.6 0.25 25;
+    --destructive-foreground: 0.98 0.01 265;
+    --border: 0.3 0.05 265;
+    --input: 0.3 0.05 265;
+    
+    /* Vibrant purple ring */
+    --ring: 0.6 0.25 290;
+    
+    --radius: 0.5rem;
+    --chart-1: 0.6 0.2 250;
+    --chart-2: 0.55 0.18 160;
+    --chart-3: 0.65 0.22 50;
+    --chart-4: 0.65 0.2 300;
+    --chart-5: 0.6 0.22 350;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  .touch-manipulation {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  @keyframes pulse-subtle {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.95;
+      transform: scale(1.02);
+    }
+  }
+  
+  .animate-pulse-subtle {
+    animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes glow {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(34, 197, 94, 0.5);
+    }
+    50% {
+      box-shadow: 0 0 30px rgba(34, 197, 94, 0.8);
+    }
+  }
+
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite;
+  }
+
+  @keyframes glow-blue {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+    }
+    50% {
+      box-shadow: 0 0 30px rgba(59, 130, 246, 0.8);
+    }
+  }
+
+  .animate-glow-blue {
+    animation: glow-blue 2s ease-in-out infinite;
+  }
+
+  @keyframes glow-purple {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(168, 85, 247, 0.5);
+    }
+    50% {
+      box-shadow: 0 0 30px rgba(168, 85, 247, 0.8);
+    }
+  }
+
+  .animate-glow-purple {
+    animation: glow-purple 2s ease-in-out infinite;
+  }
+}
+
+/* Ensure buttons are fully clickable on mobile and desktop */
+button {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+}
+
+/* Improve button press feedback on mobile */
+button:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+/* Ensure disabled buttons don't scale */
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* Smooth transitions for all interactive elements */
+button, a, input, select, textarea {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Custom scrollbar with vibrant gradient */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: oklch(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, oklch(0.6 0.25 290) 0%, oklch(0.65 0.2 250) 100%);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, oklch(0.65 0.25 290) 0%, oklch(0.7 0.2 250) 100%);
+}
+
+/* Vibrant gradient backgrounds for cards */
+.card-gradient {
+  background: linear-gradient(135deg, oklch(var(--card)) 0%, oklch(var(--muted)) 100%);
+}
+
+/* Vibrant button styles */
+.btn-primary {
+  background: linear-gradient(135deg, oklch(0.6 0.25 290) 0%, oklch(0.55 0.25 290) 100%);
+  color: oklch(var(--primary-foreground));
+  box-shadow: 0 4px 14px 0 rgba(138, 43, 226, 0.4);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, oklch(0.65 0.25 290) 0%, oklch(0.6 0.25 290) 100%);
+  box-shadow: 0 6px 20px 0 rgba(138, 43, 226, 0.6);
+}
+
+.btn-accent {
+  background: linear-gradient(135deg, oklch(0.65 0.2 250) 0%, oklch(0.6 0.2 250) 100%);
+  color: oklch(var(--accent-foreground));
+  box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.4);
+}
+
+.btn-accent:hover:not(:disabled) {
+  background: linear-gradient(135deg, oklch(0.7 0.2 250) 0%, oklch(0.65 0.2 250) 100%);
+  box-shadow: 0 6px 20px 0 rgba(59, 130, 246, 0.6);
+}
+
+/* Green deposit button with glow */
+.btn-deposit {
+  background: linear-gradient(135deg, rgb(22, 163, 74) 0%, rgb(21, 128, 61) 100%);
+  color: white;
+  box-shadow: 0 4px 14px 0 rgba(34, 197, 94, 0.5);
+}
+
+.btn-deposit:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgb(21, 128, 61) 0%, rgb(20, 83, 45) 100%);
+  box-shadow: 0 6px 20px 0 rgba(34, 197, 94, 0.7);
+}
+
+/* Blue withdraw button with glow */
+.btn-withdraw {
+  background: linear-gradient(135deg, rgb(37, 99, 235) 0%, rgb(29, 78, 216) 100%);
+  color: white;
+  box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.5);
+}
+
+.btn-withdraw:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgb(29, 78, 216) 0%, rgb(30, 64, 175) 100%);
+  box-shadow: 0 6px 20px 0 rgba(59, 130, 246, 0.7);
+}
+
+/* CRITICAL: Ensure no grayscale or monochrome filters anywhere */
+body, html, #root, *, *::before, *::after {
+  filter: none !important;
+  -webkit-filter: none !important;
+}
+
+/* Ensure all interactive elements are clickable */
+a, button, input, select, textarea, [role="button"] {
+  pointer-events: auto !important;
+}
+
+/* Vibrant gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, oklch(0.6 0.25 290) 0%, oklch(0.65 0.2 250) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Enhanced gradient text with animation */
+.gradient-text-animated {
+  background: linear-gradient(135deg, oklch(0.6 0.25 290) 0%, oklch(0.65 0.2 250) 50%, oklch(0.6 0.25 290) 100%);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-shift 3s ease infinite;
+}
+
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Ensure modals and dialogs are above everything */
+[role="dialog"], [data-radix-dialog-content] {
+  z-index: 100 !important;
+}
+
+/* Ensure dropdown menus are clickable */
+[role="menu"], [role="menuitem"] {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+/* Vibrant card borders */
+.card-vibrant {
+  border: 2px solid transparent;
+  background: linear-gradient(oklch(var(--card)), oklch(var(--card))) padding-box,
+              linear-gradient(135deg, oklch(0.6 0.25 290) 0%, oklch(0.65 0.2 250) 100%) border-box;
+}
+
+/* Vibrant badge styles */
+.badge-vibrant {
+  background: linear-gradient(135deg, oklch(0.6 0.25 290) 0%, oklch(0.65 0.2 250) 100%);
+  color: white;
+  border: none;
+}
+
+/* Glowing border effect */
+.glow-border {
+  position: relative;
+  border: 2px solid transparent;
+  background: linear-gradient(oklch(var(--card)), oklch(var(--card))) padding-box,
+              linear-gradient(135deg, oklch(0.6 0.25 290) 0%, oklch(0.65 0.2 250) 100%) border-box;
+}
+
+.glow-border::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(135deg, oklch(0.6 0.25 290) 0%, oklch(0.65 0.2 250) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.5;
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Vibrant input focus */
+input:focus, textarea:focus, select:focus {
+  border-color: oklch(0.6 0.25 290);
+  box-shadow: 0 0 0 3px rgba(138, 43, 226, 0.1);
+}
+
+/* Vibrant link hover */
+a:hover {
+  color: oklch(0.6 0.25 290);
+}
+
+/* Enhanced tab styling with vibrant colors */
+[role="tablist"] button[data-state="active"] {
+  background: linear-gradient(135deg, oklch(0.6 0.25 290) 0%, oklch(0.65 0.2 250) 100%);
+  color: white;
+  box-shadow: 0 4px 14px 0 rgba(138, 43, 226, 0.4);
+}
+
+/* Vibrant progress bars */
+[role="progressbar"] > div {
+  background: linear-gradient(135deg, oklch(0.6 0.25 290) 0%, oklch(0.65 0.2 250) 100%);
+}
+
+/* Enhanced switch styling with vibrant colors */
+button[role="switch"][data-state="checked"] {
+  background: linear-gradient(135deg, oklch(0.6 0.25 290) 0%, oklch(0.65 0.2 250) 100%);
+}
+
+/* Vibrant selection */
+::selection {
+  background: rgba(138, 43, 226, 0.3);
+  color: oklch(var(--foreground));
+}
+
+/* Enhanced alert styling */
+[role="alert"] {
+  border-left: 4px solid oklch(0.6 0.25 290);
+}
+
+/* Force vibrant colors on all UI elements */
+.bg-primary {
+  background-color: oklch(0.6 0.25 290) !important;
+}
+
+.text-primary {
+  color: oklch(0.6 0.25 290) !important;
+}
+
+.bg-accent {
+  background-color: oklch(0.65 0.2 250) !important;
+}
+
+.text-accent {
+  color: oklch(0.65 0.2 250) !important;
+}
+
+.border-primary {
+  border-color: oklch(0.6 0.25 290) !important;
+}
+
+.border-accent {
+  border-color: oklch(0.65 0.2 250) !important;
+}
+
+/* Vibrant green for success states */
+.bg-green-600 {
+  background-color: rgb(22, 163, 74) !important;
+}
+
+.text-green-600 {
+  color: rgb(22, 163, 74) !important;
+}
+
+.border-green-600 {
+  border-color: rgb(22, 163, 74) !important;
+}
+
+/* Vibrant blue for info states */
+.bg-blue-600 {
+  background-color: rgb(37, 99, 235) !important;
+}
+
+.text-blue-600 {
+  color: rgb(37, 99, 235) !important;
+}
+
+.border-blue-600 {
+  border-color: rgb(37, 99, 235) !important;
+}
+
+/* Vibrant purple for special states */
+.bg-purple-600 {
+  background-color: rgb(147, 51, 234) !important;
+}
+
+.text-purple-600 {
+  color: rgb(147, 51, 234) !important;
+}
+
+.border-purple-600 {
+  border-color: rgb(147, 51, 234) !important;
+}
+
+/* Vibrant yellow for warnings */
+.bg-yellow-500 {
+  background-color: rgb(234, 179, 8) !important;
+}
+
+.text-yellow-500 {
+  color: rgb(234, 179, 8) !important;
+}
+
+.border-yellow-500 {
+  border-color: rgb(234, 179, 8) !important;
+}
+
+/* Vibrant red for errors */
+.bg-red-600 {
+  background-color: rgb(220, 38, 38) !important;
+}
+
+.text-red-600 {
+  color: rgb(220, 38, 38) !important;
+}
+
+.border-red-600 {
+  border-color: rgb(220, 38, 38) !important;
+}
+
+/* Ensure gradient backgrounds are vibrant */
+.bg-gradient-to-r {
+  background-image: linear-gradient(to right, var(--tw-gradient-stops)) !important;
+}
+
+.bg-gradient-to-br {
+  background-image: linear-gradient(to bottom right, var(--tw-gradient-stops)) !important;
+}
+
+.from-primary {
+  --tw-gradient-from: oklch(0.6 0.25 290) !important;
+  --tw-gradient-to: oklch(0.6 0.25 290 / 0) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+.via-accent {
+  --tw-gradient-to: oklch(0.65 0.2 250 / 0) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), oklch(0.65 0.2 250), var(--tw-gradient-to) !important;
+}
+
+.to-primary {
+  --tw-gradient-to: oklch(0.6 0.25 290) !important;
+}
+
+.to-accent {
+  --tw-gradient-to: oklch(0.65 0.2 250) !important;
+}
+
+.from-green-600 {
+  --tw-gradient-from: rgb(22, 163, 74) !important;
+  --tw-gradient-to: rgb(22, 163, 74, 0) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+.to-emerald-600 {
+  --tw-gradient-to: rgb(5, 150, 105) !important;
+}
+
+.from-blue-600 {
+  --tw-gradient-from: rgb(37, 99, 235) !important;
+  --tw-gradient-to: rgb(37, 99, 235, 0) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+.to-cyan-600 {
+  --tw-gradient-to: rgb(8, 145, 178) !important;
+}
+
+/* Ensure all shadows are vibrant */
+.shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(138, 43, 226, 0.1), 0 4px 6px -4px rgba(138, 43, 226, 0.1) !important;
+}
+
+.shadow-xl {
+  box-shadow: 0 20px 25px -5px rgba(138, 43, 226, 0.1), 0 8px 10px -6px rgba(138, 43, 226, 0.1) !important;
+}
+
+/* Vibrant hover effects */
+.hover\:shadow-xl:hover {
+  box-shadow: 0 20px 25px -5px rgba(138, 43, 226, 0.2), 0 8px 10px -6px rgba(138, 43, 226, 0.2) !important;
+}
+
+/* Ensure ring colors are vibrant */
+.ring-primary {
+  --tw-ring-color: oklch(0.6 0.25 290) !important;
+}
+
+.ring-accent {
+  --tw-ring-color: oklch(0.65 0.2 250) !important;
+}
+
+/* Force remove any potential grayscale from images */
+img {
+  filter: none !important;
+  -webkit-filter: none !important;
+}
+
+/* Ensure SVG icons are colorful */
+svg {
+  filter: none !important;
+  -webkit-filter: none !important;
+}
+

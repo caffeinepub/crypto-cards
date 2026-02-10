@@ -1,0 +1,317 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 7,
+  "summary": "Crypto Cards is a web dApp for playing card games (Spades and Pot Limit Omaha / “Omaha 4-card”) in two modes: (1) offline “Play for Fun” using browser localStorage with AI bots, and (2) “Play for Real” intended to use an Internet Computer (IC) Motoko canister for persistent profiles, balances, transactions, lobbies, admin controls, and payment flows. The frontend is a React + Tailwind (shadcn/ui) app using TanStack React Query for canister calls, integrates Internet Identity for IC authentication, and supports Web3 wallet connections (Coinbase/MetaMask injected providers plus a WalletConnect UI placeholder). The backend canister implements role-based access control, user/player profiles, deposits/withdrawals, lobby/tournament primitives, admin stats and house-cut configuration, Stripe checkout session outcalls, and a Flexa deposit lifecycle (initiate, poll status, cancel, and webhook processing with replay protection and authorized principals).",
+  "architectural_notes": [
+    "Frontend uses TanStack React Query with query-key based caching and explicit invalidation after mutations (balance/profile/transactions, admin stats, etc.).",
+    "IC canister access is wrapped via a shared actor hook (useActor) that is recreated per Internet Identity principal; dependent queries are invalidated/refetched when identity changes.",
+    "Motoko backend uses in-canister state via mo:core/Map maps (profiles, lobbies, tournaments, game states, Flexa deposits, webhook replay ids, etc.).",
+    "Role-based authorization is centralized in backend/authorization/access-control.mo with roles (#admin/#user/#guest) and permission checks throughout backend entrypoints.",
+    "Dual-mode product pattern: UI supports “fun/offline” flows (localStorage/sessionStorage, guest wallet) and “real/online” flows (IC actor + Web3 wallet for Base).",
+    "Payments are modeled as in-game balance updates and transaction records on the IC canister; Flexa and Stripe are integrated as external-payment rails (Stripe via HTTP outcalls, Flexa via webhook + polling).",
+    "Flexa deposit confirmation uses polling on the frontend (react-query refetchInterval) and backend state machine (#pending/#confirmed/#failed) with webhook-triggered crediting.",
+    "Backend includes partial game-state scaffolding for Omaha and Spades (maps for states, limited mutation/query surface) but not full on-chain gameplay engine.",
+    "UI layer is built with Tailwind + custom OKLCH theme tokens and extensive custom CSS to enforce vibrant styling and pointer-event/clickability fixes.",
+    "Camera + QR scanning are implemented as reusable hooks (useCamera, useQRScanner) to support future QR-based flows (e.g., WalletConnect/other)."
+  ],
+  "known_issues": [
+    "Many “real mode” lobby/tournament/chat React Query hooks in frontend/src/hooks/useQueries.ts are stubbed/mocked (returning empty arrays or BigInt(1)) and do not call the backend canister yet (e.g., list lobbies, get lobby, send chat, create/join tournament).",
+    "Frontend useCloseLobby/useFillLobbyWithBots/useQuickPlay/useCreateTournament/useJoinTournament explicitly throw “not implemented in backend” errors; backend currently has no closeLobby/fillLobbyWithBots/quickPlay endpoints.",
+    "Backend minWagerAmount is initialized to 500 and described as “$5 (500 cents)”, but the frontend treats wagers as ETH/wei (1e18 scaling). Units are inconsistent and will cause incorrect minimum-wager enforcement.",
+    "House cut is configurable and shown in the UI, but backend gameplay/winnings distribution applying house cut is not implemented in the provided canister code.",
+    "Flops-seen stats hooks are mocked in the frontend; backend stores flopsSeen fields but no corresponding record/update endpoints exist in main.mo.",
+    "WalletConnect is currently a custom instructional modal with an example URI and no real WalletConnect v2 session establishment; frontend/src/lib/web3modal.ts is a placeholder.",
+    "QuickPlayGame references backend actions (flipTurnCard/flipRiverCard/setLastAction) only when lobbyId is set, but the component never assigns a real lobbyId in current code, so “real mode” game-state writes likely never occur.",
+    "Backend stores withdrawalRequests map but does not currently use it (withdrawals are marked completed immediately); no asynchronous settlement workflow is implemented.",
+    "Stripe integration exists but is not surfaced in the provided frontend components; configuration must be set by an admin via backend calls not present in UI.",
+    "Caffeine platform dashboard/Live tab sync issues are preventing the app from being published (Go Live) and showing the latest live version."
+  ],
+  "isFixRequest": true,
+  "existing_features": [
+    {
+      "id": "IF-1",
+      "title": "Internet Identity authentication provider",
+      "synonyms": [
+        "II login",
+        "IC auth context"
+      ],
+      "description": "Provides an InternetIdentityProvider and useInternetIdentity hook to initialize AuthClient, manage login/logout state, and expose an IC Identity to the app for authenticated canister calls.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-2",
+      "title": "IC canister actor creation with identity-aware caching",
+      "synonyms": [
+        "actor hook",
+        "createActorWithConfig integration"
+      ],
+      "description": "useActor creates an authenticated or anonymous canister actor keyed by principal, calls initializeAccessControl on creation, and invalidates/refetches non-actor queries when the actor changes.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-3",
+      "title": "Role-based access control (admin/user/guest) on backend",
+      "synonyms": [
+        "RBAC",
+        "access-control.mo"
+      ],
+      "description": "Backend enforces permissions via AccessControl.hasPermission and AccessControl.isAdmin, with first registered non-anonymous principal becoming admin; supports role assignment by admins.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-4",
+      "title": "User profile management (name + wallet address)",
+      "synonyms": [
+        "userProfiles",
+        "saveUserProfile"
+      ],
+      "description": "Backend stores per-principal UserProfile records; frontend provides queries/mutations to fetch and save the caller’s user profile with react-query invalidation.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-5",
+      "title": "Player profile, stats, and on-chain transaction ledger",
+      "synonyms": [
+        "playerProfiles",
+        "SerializablePlayerProfile"
+      ],
+      "description": "Backend maintains per-player profiles including stats, total winnings, current balance, flops fields, and an append-only transactionHistory of deposits/wagers/winnings/withdrawals; frontend can fetch caller profile and transaction history.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-6",
+      "title": "In-game balance deposit and withdrawal (canister-side accounting)",
+      "synonyms": [
+        "depositFunds",
+        "requestWithdrawal"
+      ],
+      "description": "Implements depositFunds and requestWithdrawal in the backend, updating currentBalance and recording completed transaction records; frontend provides DepositWithdrawModal with validation, toasts, and query invalidation to refresh balance/profile/history.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-7",
+      "title": "Flexa deposit initiation, status polling, and cancellation",
+      "synonyms": [
+        "Flexa payment flow",
+        "Flexa SPEDN"
+      ],
+      "description": "Backend supports initiateFlexaDeposit, getFlexaDepositStatus, cancelFlexaDeposit, and webhook-driven confirmation; frontend supports a dedicated Flexa UX (mobile deep link or desktop QR placeholder) and react-query polling (2s while pending) with notifications and automatic balance refresh.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-8",
+      "title": "Flexa webhook processing with authorization and replay protection",
+      "synonyms": [
+        "processFlexaWebhook",
+        "webhook security"
+      ],
+      "description": "Backend verifies webhook caller is authorized (admin or whitelisted principal), validates API key and signature, blocks replays via processedWebhookIds, transitions deposit state, and credits user balance on confirmed deposits.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-9",
+      "title": "Stripe checkout session creation via HTTP outcalls",
+      "synonyms": [
+        "Stripe API",
+        "IC http_request"
+      ],
+      "description": "Backend includes Stripe module using IC http_request outcalls to create checkout sessions and query session status; includes a transform callback and configuration guarded by admin role.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-10",
+      "title": "Admin dashboard: auto-admin initialization, stats, and house cut configuration",
+      "synonyms": [
+        "AdminSettings",
+        "houseCutPercent"
+      ],
+      "description": "Frontend AdminSettings attempts to auto-initialize access control and then displays admin-only live stats and a house-cut editor; backend implements getAdminStats, getHouseCutPercent, updateHouseCutPercent with admin enforcement.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-11",
+      "title": "Web3 wallet integration for Base network (Coinbase/MetaMask + guest)",
+      "synonyms": [
+        "useWeb3Wallet",
+        "Base chain switch"
+      ],
+      "description": "Implements wallet connect/disconnect with injected providers, chain switching to Base (8453), balance fetching, auto-connect from localStorage, transaction-readiness verification with retries, and a guest wallet mode for offline play.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-12",
+      "title": "Wallet install and connection UX",
+      "synonyms": [
+        "WalletInstallModal",
+        "Header wallet menu"
+      ],
+      "description": "Provides a wallet installation modal when no provider is detected, and a Header wallet dropdown to connect via Coinbase/MetaMask/WalletConnect placeholder, plus deposit/withdraw entrypoints when connected.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-13",
+      "title": "Dual-mode gameplay scaffolding (offline fun vs online real)",
+      "synonyms": [
+        "Play for Fun",
+        "Play for Real"
+      ],
+      "description": "App supports toggling modes, uses localStorage/sessionStorage for offline stats/lobbies and IC canister queries for real mode; UI messaging and constraints differ per mode (e.g., real mode requires wallet connection for funds ops).",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-14",
+      "title": "Offline lobby browser and persistence",
+      "synonyms": [
+        "offlineLobbies",
+        "localStorage lobbies"
+      ],
+      "description": "In fun mode, LobbyBrowser can create/join lobbies stored in localStorage, tracks bot occupancy, and persists lobby lists and messages locally.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-15",
+      "title": "Lobby & tournament primitives on backend",
+      "synonyms": [
+        "createLobby/joinLobby/leaveLobby",
+        "createTournament/joinTournament"
+      ],
+      "description": "Backend supports creating/joining/leaving lobbies (with wager checks for real mode) and creating/joining tournaments (minimum entry fee + balance checks), plus public queries for active lobbies/tournaments.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-16",
+      "title": "Lobby chat storage on backend and offline chat UI",
+      "synonyms": [
+        "sendChatMessage",
+        "chatMessages"
+      ],
+      "description": "Backend includes sendChatMessage with participant-only authorization and stores messages on the lobby; LobbyRoom implements chat UI and offline message persistence (online chat hooks are currently stubbed).",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-17",
+      "title": "Quick Play game mode with AI bots (Spades and Pot Limit Omaha)",
+      "synonyms": [
+        "QuickPlayGame",
+        "AI opponents"
+      ],
+      "description": "Implements a complete in-browser Quick Play experience with AI players, Spades trick-taking with reneg detection and penalties, and Omaha betting controls (check/call/fold/bet), interactive community-card reveal, pot tracking, and score progression.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-18",
+      "title": "Camera and QR scanning hooks",
+      "synonyms": [
+        "useCamera",
+        "useQRScanner"
+      ],
+      "description": "Reusable hooks to access device camera, capture frames, and scan QR codes using jsQR loaded at runtime, with start/stop/switch camera support and result buffering.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "IF-19",
+      "title": "Wallet & statistics dashboard",
+      "synonyms": [
+        "WalletSection",
+        "transaction table"
+      ],
+      "description": "Displays balance, winnings, win-rate, and transaction history; in real mode uses canister queries and in fun mode uses local offline stats; integrates deposit/withdraw modals gated by wallet connectivity.",
+      "reqIds": [],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-live-publish-status-section-in-the-ui-that-lets-users-confirm-they-are-on-the-live-deployment-by-showing-the-current-site-origin-and-the-backend-reported-build-deploy-metadata-with-a-one-click-copy-to-clipboard-action-for-the-live-link",
+      "title": "Add a \"Live / Publish Status\" section in the UI that lets users confirm they are on the live deployment by showing the current site origin and the backend-reported build/deploy metadata, with a one-click copy-to-clipboard action for the live link.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-improve-the-frontend-s-deployment-readiness-feedback-by-surfacing-backend-connectivity-state-connected-not-connected-and-actionable-guidance-in-english-when-the-backend-cannot-be-reached-without-changing-immutable-hook-files",
+      "title": "Improve the frontend’s deployment/readiness feedback by surfacing backend connectivity state (connected / not connected) and actionable guidance in English when the backend cannot be reached, without changing immutable hook files.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-user-facing-go-live-get-icp-app-link-help-section-in-the-ui-that-explains-in-english-how-to-publish-the-current-draft-to-live-in-caffeine-and-where-to-find-copy-the-resulting-public-internet-computer-app-link",
+      "title": "Add a user-facing “Go Live / Get ICP App Link” help section in the UI that explains, in English, how to publish the current Draft to Live in Caffeine and where to find/copy the resulting public Internet Computer app link.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-enhance-the-existing-live-app-status-ui-to-display-both-a-the-current-site-origin-and-b-the-derived-public-ic-gateway-url-in-the-format-https-canister-id-ic0-app-when-the-canister-id-is-available-at-runtime-build-time-include-one-click-copy-to-clipboard-actions-for-each-url-with-clear-success-failure-toasts",
+      "title": "Enhance the existing “Live App Status” UI to display both (a) the current site origin and (b) the derived public IC gateway URL in the format https://<canister-id>.ic0.app when the canister ID is available at runtime/build-time; include one-click copy-to-clipboard actions for each URL with clear success/failure toasts.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-backend-frontend-candid-api-mismatch-for-saving-the-caller-user-profile-so-the-app-can-build-and-run-without-method-not-found-errors",
+      "title": "Fix the backend ↔ frontend candid/API mismatch for saving the caller user profile so the app can build and run without method-not-found errors.",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-make-backend-connectivity-state-and-error-reporting-accurate-by-implementing-real-retry-error-tracking-in-useactorwithretry-without-modifying-any-immutable-hook-files",
+      "title": "Make backend connectivity state and error reporting accurate by implementing real retry/error tracking in useActorWithRetry, without modifying any immutable hook files.",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Publish Crypto Cards to production (generate public .ic0.app link / Go Live deployment)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Add a backend query method that returns canister build/deploy metadata so the frontend can verify that the live app is running the latest deployed canister.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Ensure the backend build/deploy metadata endpoint is stable and returns sensible defaults so the Live App Status UI does not break during deployment troubleshooting.",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "status": "pending"
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "Crypto Cards",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

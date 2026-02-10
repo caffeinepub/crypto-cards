@@ -1,0 +1,59 @@
+{
+  "kind": "coverage_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-10T21:27:56.466Z",
+  "sources": {
+    "buildRequest": true,
+    "implementationPlan": true
+  },
+  "requirements": {
+    "total": 3,
+    "implemented": 2,
+    "items": [
+      {
+        "id": "REQ-6",
+        "summary": "Fix the backend ↔ frontend candid/API mismatch for saving the caller user profile so the app can build and run without method-not-found errors.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useQueries.ts"
+        ]
+      },
+      {
+        "id": "REQ-7",
+        "summary": "Make backend connectivity state and error reporting accurate by implementing real retry/error tracking in useActorWithRetry, without modifying any immutable hook files.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useActorWithRetry.ts",
+          "frontend/src/components/BackendConnectivityIndicator.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useActorWithRetry.ts",
+          "frontend/src/components/BackendConnectivityIndicator.tsx"
+        ]
+      },
+      {
+        "id": "REQ-8",
+        "summary": "Ensure the backend build/deploy metadata endpoint is stable and returns sensible defaults so the Live App Status UI does not break during deployment troubleshooting.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      }
+    ]
+  },
+  "changedFiles": [
+    "build-request.json",
+    "feature_evidence.json",
+    "frontend-file-summaries.txt",
+    "frontend-implementation-plan.json",
+    "frontend/src/components/BackendConnectivityIndicator.tsx",
+    "frontend/src/hooks/useActorWithRetry.ts",
+    "frontend/src/hooks/useQueries.ts",
+    "project_state.json",
+    "scratch/component-selection.json",
+    "spec.md",
+    "spec_vs_diff_report.json"
+  ]
+}

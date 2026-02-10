@@ -1,0 +1,44 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Frontend fixes for canister API mismatch and backend connectivity retry/error reporting",
+  "requirements": [
+    {
+      "id": "REQ-6",
+      "summary": "Update frontend user-profile saving hook to call the canister method that actually exists, eliminating method-not-found build/runtime failures.",
+      "acceptanceCriteria": [
+        "Backend exposes a public method named saveUserProfile (or frontend no longer calls saveUserProfile) so that frontend/src/hooks/useQueries.ts useSaveCallerUserProfile does not call a non-existent canister method.",
+        "The save user profile flow succeeds end-to-end in \"Play for Real\" mode: saving a profile updates canister state and subsequent getCallerUserProfile returns the saved value.",
+        "Type generation/build completes successfully with no candid/type errors related to UserProfile saving."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Fix the user profile save mutation to call the generated canister method name (saveCallerUserProfile) instead of the non-existent saveUserProfile, keeping the rest of the React Query invalidation flow intact."
+        }
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "summary": "Implement accurate backend connectivity error/retry state in useActorWithRetry while respecting immutable hook/component constraints.",
+      "acceptanceCriteria": [
+        "frontend/src/hooks/useActorWithRetry.ts sets isError and error when actor creation fails, and reflects retryCount/isRetrying during retry attempts.",
+        "BackendConnectivityIndicator displays \"Backend: Not Connected\" along with a meaningful English error message when the backend cannot be reached.",
+        "No changes are made to immutable paths (frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui/*)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useActorWithRetry.ts",
+          "operation": "modify",
+          "description": "Enhance the wrapper to derive real error state from the underlying React Query actor query (via the query cache), and implement retry tracking (retryCount/isRetrying) that triggers controlled refetch attempts of the actor query when creation fails; ensure state resets correctly on success and uses clear English Error messages."
+        },
+        {
+          "path": "frontend/src/components/BackendConnectivityIndicator.tsx",
+          "operation": "modify",
+          "description": "Adjust indicator messaging/rendering to reliably show \"Backend: Not Connected\" plus a meaningful English error message sourced from useActorWithRetry.error when connection/actor creation fails, while continuing to show retry progress when isRetrying is true."
+        }
+      ]
+    }
+  ]
+}
