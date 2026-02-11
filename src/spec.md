@@ -1,11 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Make the app’s global background noticeably more colorful while preserving readable contrast in both light and dark modes.
+**Goal:** Publish/deploy the current draft build (Version 163) to the Live (public) ICP canister so it is accessible via the public ic0.app gateway URL.
 
 **Planned changes:**
-- Replace the current subtle global background gradient (used by the main app container and loading screen) with a richer multi-stop gradient derived from existing theme colors (primary/secondary/accent).
-- Ensure foreground text and UI elements maintain strong contrast across the full gradient in both `:root` (light) and `.dark` (dark) modes.
-- Apply the updated background consistently to the main app shell and loading screen without any backend changes.
+- Publish Version 163 from draft/preview to the Live (public) canister deployment.
+- Ensure Admin Settings exposes a non-empty “Public ICP Link” pointing to `https://<canister-id>.ic0.app`.
+- Ensure deployment metadata shown in the app reflects the newly published Version 163 build after refresh.
 
-**User-visible outcome:** The loading screen and main app background look more vibrant and colorful, while all text and UI remain clearly legible in both light and dark modes.
+**User-visible outcome:** The app loads successfully from `https://<canister-id>.ic0.app` in a new browser session, and Admin Settings shows the correct Public ICP Link and updated deployment metadata.

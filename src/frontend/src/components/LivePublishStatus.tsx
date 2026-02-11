@@ -3,18 +3,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Copy, CheckCircle2, Globe, Calendar, Hash, AlertCircle, ExternalLink } from 'lucide-react';
+import { Copy, CheckCircle2, Globe, Calendar, Hash, AlertCircle, RefreshCw } from 'lucide-react';
 import { useGetCanisterBuildMetadata } from '../hooks/useQueries';
-import { getCurrentSiteOrigin, getPublicIcpLink, copyToClipboard } from '../utils/icpLinks';
+import { getCurrentSiteOrigin, getPublicIcpLink, getCanisterId, copyToClipboard } from '../utils/icpLinks';
 import { toast } from 'sonner';
 
 export default function LivePublishStatus() {
   const [copiedOrigin, setCopiedOrigin] = useState(false);
   const [copiedIcpLink, setCopiedIcpLink] = useState(false);
-  const { data: buildMetadata, isLoading, isError } = useGetCanisterBuildMetadata();
+  const { data: buildMetadata, isLoading, isError, refetch, isFetching } = useGetCanisterBuildMetadata();
 
   const currentOrigin = getCurrentSiteOrigin();
   const publicIcpLink = getPublicIcpLink();
+  const canisterId = getCanisterId();
+  const isOnIc0App = currentOrigin.includes('.ic0.app');
 
   const handleCopyOrigin = async () => {
     const success = await copyToClipboard(currentOrigin);
@@ -39,6 +41,16 @@ export default function LivePublishStatus() {
       setTimeout(() => setCopiedIcpLink(false), 2000);
     } else {
       toast.error('Failed to copy Public ICP Link');
+    }
+  };
+
+  const handleRefreshDeploymentInfo = async () => {
+    toast.info('Refreshing backend deployment info...');
+    const result = await refetch();
+    if (result.isSuccess) {
+      toast.success('Backend deployment info refreshed successfully!');
+    } else if (result.isError) {
+      toast.error('Failed to refresh backend deployment info');
     }
   };
 
@@ -116,7 +128,7 @@ export default function LivePublishStatus() {
               ic0.app
             </Badge>
           </label>
-          {publicIcpLink ? (
+          {publicIcpLink && canisterId ? (
             <>
               <div className="flex items-center gap-2">
                 <div className="flex-1 px-4 py-2 bg-muted rounded-md font-mono text-sm break-all border-2 border-accent/20">
@@ -144,12 +156,20 @@ export default function LivePublishStatus() {
               <p className="text-xs text-muted-foreground">
                 Your permanent public URL on the Internet Computer network
               </p>
+              {!isOnIc0App && (
+                <Alert className="border-blue-500/50 bg-blue-50 dark:bg-blue-950/30">
+                  <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <AlertDescription className="text-blue-600 dark:text-blue-400 text-sm">
+                    <strong>Tip:</strong> You're viewing from a preview/draft origin. Visit the public ICP link above to access your live deployed app.
+                  </AlertDescription>
+                </Alert>
+              )}
             </>
           ) : (
             <Alert className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/30">
               <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
               <AlertDescription className="text-amber-600 dark:text-amber-400 text-sm">
-                <strong>Not available.</strong> The public ICP link will appear after your app is published to the live network.
+                <strong>Not available.</strong> The public ICP link will appear after your app is published to the live network. Canister ID detection: {canisterId ? `Found (${canisterId})` : 'Not detected'}
               </AlertDescription>
             </Alert>
           )}
@@ -157,7 +177,19 @@ export default function LivePublishStatus() {
 
         {/* Backend Build Metadata Section */}
         <div className="space-y-3 pt-2 border-t border-border">
-          <label className="text-sm font-semibold text-muted-foreground">Backend Deployment Info</label>
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-semibold text-muted-foreground">Backend Deployment Info</label>
+            <Button
+              onClick={handleRefreshDeploymentInfo}
+              size="sm"
+              variant="ghost"
+              disabled={isFetching}
+              className="gap-2 h-8"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} />
+              {isFetching ? 'Refreshing...' : 'Refresh'}
+            </Button>
+          </div>
           
           {isLoading && (
             <Alert className="border-blue-500/50 bg-blue-50 dark:bg-blue-950/30">

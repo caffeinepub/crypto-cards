@@ -1,6 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Zap, Spade, Diamond } from 'lucide-react';
+import { Zap, Spade, Diamond } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { GameMode } from '../App';
 
@@ -23,13 +22,6 @@ export default function LobbyBrowser({ gameMode, onQuickPlay }: LobbyBrowserProp
             : 'Play against AI bots in offline mode'}
         </p>
       </div>
-
-      <Alert>
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          <strong>Coming Soon:</strong> Lobby browsing and multiplayer matchmaking features are currently under development.
-        </AlertDescription>
-      </Alert>
 
       {/* Quick Play Section */}
       <div>

@@ -32,6 +32,12 @@ export function getCanisterId(): string | null {
     if (icp0Match) {
       return icp0Match[1];
     }
+
+    // Pattern: <canister-id>.localhost (local development)
+    const localhostMatch = hostname.match(/^([a-z0-9-]+)\.localhost$/i);
+    if (localhostMatch) {
+      return localhostMatch[1];
+    }
     
     // Method 2: Check for canister ID in local development
     // During local development, the canister ID might be in localStorage or sessionStorage
@@ -43,6 +49,31 @@ export function getCanisterId(): string | null {
     // Method 3: Try to extract from any global config if available
     if (typeof window !== 'undefined' && (window as any).canisterId) {
       return (window as any).canisterId;
+    }
+
+    // Method 4: Check for canister ID in the URL path (some deployments use this pattern)
+    const pathMatch = window.location.pathname.match(/\/canister\/([a-z0-9-]+)/i);
+    if (pathMatch) {
+      return pathMatch[1];
+    }
+
+    // Method 5: Try to read from import.meta.env if available (Vite)
+    if (typeof import.meta !== 'undefined' && import.meta.env) {
+      const viteCanisterId = import.meta.env.VITE_CANISTER_ID || 
+                             import.meta.env.VITE_BACKEND_CANISTER_ID ||
+                             import.meta.env.CANISTER_ID_BACKEND;
+      if (viteCanisterId) {
+        return viteCanisterId;
+      }
+    }
+
+    // Method 6: Try to read from process.env if available (fallback)
+    if (typeof process !== 'undefined' && process.env) {
+      const processCanisterId = (process.env as any).CANISTER_ID_BACKEND || 
+                                (process.env as any).BACKEND_CANISTER_ID;
+      if (processCanisterId) {
+        return processCanisterId;
+      }
     }
     
     return null;

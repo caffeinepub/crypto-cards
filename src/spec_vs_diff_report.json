@@ -1,30 +1,53 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T19:20:33.508Z",
-  "summary": "REQ-1 appears implemented by adding a new multi-stop gradient utility class and applying it to both the loading screen container and the main app shell container. No backend files are shown as modified. However, there are additional modified meta/state files not requested by the BuildRequest.",
-  "missing_requirements": [],
+  "generatedAt": "2026-02-11T20:25:27.343Z",
+  "summary": "The diff primarily adds frontend UI/utilities to display a “Live Deployment Status” section (including generation/copying of an ic0.app link and refetching build metadata). It does not contain evidence of actually publishing/deploying Version 163 to the Live (public) canister.",
+  "missing_requirements": [
+    {
+      "id": "REQ-1",
+      "requirement": "Publish/deploy the current draft build (Version 163) to the Live (public) canister so the application is accessible via the public ICP gateway URL (https://<canister-id>.ic0.app), not only via the draft/preview origin.",
+      "reason": "No deployment/publish mechanism or configuration change is shown in the diff; backend file even indicates no code changes are needed and suggests manual deployment. The changes are limited to UI/status display and link generation utilities, which do not perform a publish to the live canister.",
+      "evidence": [
+        "backend/main.mo",
+        "frontend/src/components/AdminSettings.tsx",
+        "frontend/src/components/LivePublishStatus.tsx",
+        "frontend/src/utils/icpLinks.ts"
+      ]
+    }
+  ],
   "hallucinated_features": [
     {
-      "description": "Updated project tracking/state file (project_state.json) to add/alter feature request entries and statuses, which was not requested as part of background styling.",
-      "reason": "BuildRequest only asks for frontend background styling changes and explicitly notes no backend changes; it does not request changes to project tracking metadata.",
+      "description": "Added new Admin Settings UI sections/components for live publish verification (LivePublishStatus, GoLiveHelp) rather than only performing a publish/deploy action.",
+      "reason": "REQ-1 is about publishing/deploying Version 163 to the live canister; the diff implements new UI for status/verification instead of (or in addition to) deployment. This is not explicitly requested and risks being considered new UI scope.",
       "evidence": [
-        "project_state.json"
+        "frontend/src/components/AdminSettings.tsx",
+        "frontend/src/components/LivePublishStatus.tsx"
       ]
     },
     {
-      "description": "Modified frontend-file-summaries.txt (documentation/summary content) unrelated to implementing background styling.",
-      "reason": "Not requested by REQ-1; BuildRequest focuses on updating the global background gradient styling.",
+      "description": "Introduced new ICP link utility helpers to infer canister ID from hostname/storage/env and generate a public ic0.app link, plus clipboard helper.",
+      "reason": "Not requested explicitly; REQ-1 only requires the Public ICP Link be available and correct after publish, not the addition of heuristic canister-id resolution logic.",
+      "evidence": [
+        "frontend/src/utils/icpLinks.ts"
+      ]
+    },
+    {
+      "description": "Broader unrelated frontend feature additions/changes (wallet manager/provider, header/footer changes, lobby/tournament placeholders, styling changes, playable game UI, etc.).",
+      "reason": "BuildRequest Non-goals explicitly say not to add new gameplay, wallet, admin, or UI features as part of this request; the diff summary indicates multiple such changes.",
       "evidence": [
         "frontend-file-summaries.txt"
       ]
     }
   ],
-  "confidence": 0.68,
+  "confidence": 0.74,
   "changed_files": [
+    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/App.tsx",
-    "frontend/src/index.css",
+    "frontend/src/components/AdminSettings.tsx",
+    "frontend/src/components/LivePublishStatus.tsx",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/utils/icpLinks.ts",
     "project_state.json"
   ]
 }

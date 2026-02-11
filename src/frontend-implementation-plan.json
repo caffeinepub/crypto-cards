@@ -1,27 +1,31 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Richer multi-stop colorful global background gradient",
+  "title": "Ensure Live publish verification UI correctly surfaces public ICP link and refreshed build metadata",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Replace the subtle global background gradient on the loading screen and main app shell with a richer multi-stop gradient using theme colors, while preserving readable contrast in light and dark modes.",
+      "summary": "Improve frontend live-publish verification so Admin Settings reliably shows the public ic0.app link and allows confirming refreshed canister build metadata after Version 163 is published.",
       "acceptanceCriteria": [
-        "On both the loading screen and the main app shell, the background appears noticeably more colorful than the current gradient.",
-        "Text and UI elements remain clearly legible (no low-contrast sections) in both light mode (:root) and dark mode (.dark).",
-        "No backend changes are made.",
-        "The change is implemented without editing any files listed under frontend immutablePaths."
+        "After publish, the app loads successfully from https://<canister-id>.ic0.app in a new browser session.",
+        "In the Admin Settings area, the Public ICP Link is available and points to https://<canister-id>.ic0.app (not empty/unavailable).",
+        "Backend deployment metadata (e.g., build time and/or build identifier if provided) reflects the newly published Version 163 build when refreshed."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/index.css",
+          "path": "frontend/src/utils/icpLinks.ts",
           "operation": "modify",
-          "description": "Add new reusable global utility class(es) for a richer, multi-stop background gradient that blends theme tokens (background + translucent primary/secondary/accent) with separate tuned definitions for :root and .dark to maintain foreground contrast."
+          "description": "Harden canister-id detection so getPublicIcpLink() can be computed reliably across draft/preview and live builds (e.g., support more host patterns and common build/runtime-provided canister id sources), while still always returning an ic0.app URL when a canister id is known."
         },
         {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/src/components/LivePublishStatus.tsx",
           "operation": "modify",
-          "description": "Wire the new global background utility class into both the loading screen wrapper and the main app shell wrapper, replacing the existing subtle bg-gradient-to-br usage so both states share the updated colorful gradient."
+          "description": "Refine LivePublishStatus to use the improved ic0.app link computation, reduce false 'not available' states, and ensure the 'Refresh' action reliably re-requests build metadata so admins can confirm the newly published Version 163 build metadata update after deployment."
+        },
+        {
+          "path": "frontend/src/components/AdminSettings.tsx",
+          "operation": "modify",
+          "description": "Ensure the Admin Settings 'Live Deployment Status' area clearly surfaces the 'Public ICP Link' value from LivePublishStatus as a first-class admin verification item (no new admin features; only presentation/clarity changes)."
         }
       ]
     }

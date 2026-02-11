@@ -6,8 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Settings, Percent, Save, AlertCircle, CheckCircle2, DollarSign, Wallet, UserPlus, UserMinus, Users, Trophy } from 'lucide-react';
+import { Settings, Percent, Save, AlertCircle, CheckCircle2, DollarSign, UserPlus, UserMinus, Users } from 'lucide-react';
 import { toast } from 'sonner';
+import LivePublishStatus from './LivePublishStatus';
+import GoLiveHelp from './GoLiveHelp';
 
 export default function AdminSettings() {
   const [newPercent, setNewPercent] = useState<string>('');
@@ -27,7 +29,7 @@ export default function AdminSettings() {
       return;
     }
 
-    toast.info('House cut update coming soon', {
+    toast.info('House cut update pending', {
       description: 'This feature will be available once backend methods are implemented',
     });
   };
@@ -50,6 +52,22 @@ export default function AdminSettings() {
           <strong>Admin Access Granted</strong> - You have full administrative privileges to manage platform settings.
         </AlertDescription>
       </Alert>
+
+      {/* Live Publish Verification Section - Primary Focus */}
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-xl font-semibold mb-2">Live Deployment Status</h3>
+          <p className="text-sm text-muted-foreground">
+            Verify your app's public accessibility and latest deployment metadata after publishing Version 163
+          </p>
+        </div>
+        
+        <LivePublishStatus />
+        
+        <GoLiveHelp />
+      </div>
+
+      <Separator className="my-8" />
 
       {/* System Statistics Dashboard */}
       <Card>
@@ -130,38 +148,16 @@ export default function AdminSettings() {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                The house cut is automatically deducted from total winnings before distributing to players.
+                Changes will take effect immediately for all new games
               </p>
             </div>
 
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                <strong>Important:</strong> Changes to the house cut percentage will apply to all new games and tournaments immediately. Existing active games will continue with their original house cut rate.
+                <strong>Note:</strong> The house cut is automatically deducted from winnings in real-money games. Fun mode games are not affected.
               </AlertDescription>
             </Alert>
-          </div>
-
-          <div className="border-t pt-4">
-            <h4 className="font-semibold mb-2">How House Cut Works</h4>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li className="flex items-start gap-2">
-                <span className="text-primary mt-0.5">•</span>
-                <span>The house cut is calculated as a percentage of the total prize pool</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary mt-0.5">•</span>
-                <span>It is automatically deducted before distributing winnings to players</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary mt-0.5">•</span>
-                <span>The cut is transferred to the admin wallet address</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary mt-0.5">•</span>
-                <span>Default house cut is set to 5% for all games</span>
-              </li>
-            </ul>
           </div>
         </CardContent>
       </Card>
@@ -174,51 +170,16 @@ export default function AdminSettings() {
             User Role Management
           </CardTitle>
           <CardDescription>
-            Assign or revoke admin and user privileges for platform members
+            Manage user roles and permissions across the platform
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent>
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              <strong>Coming Soon:</strong> User role management interface will allow you to assign or revoke admin/user privileges. This feature is currently under development.
+              User role management interface will be available once backend methods are implemented.
             </AlertDescription>
           </Alert>
-          
-          <div className="flex gap-2">
-            <Button variant="outline" disabled className="gap-2 flex-1">
-              <UserPlus className="w-4 h-4" />
-              Assign Admin Role
-            </Button>
-            <Button variant="outline" disabled className="gap-2 flex-1">
-              <UserMinus className="w-4 h-4" />
-              Revoke Admin Role
-            </Button>
-          </div>
-
-          <Separator />
-
-          <div className="space-y-2">
-            <h4 className="font-semibold text-sm">Role Management Features</h4>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li className="flex items-start gap-2">
-                <span className="text-primary mt-0.5">•</span>
-                <span>Promote users to admin status with full platform privileges</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary mt-0.5">•</span>
-                <span>Revoke admin privileges and demote to regular user status</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary mt-0.5">•</span>
-                <span>View complete list of all platform users and their roles</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-primary mt-0.5">•</span>
-                <span>Audit trail of all role changes and administrative actions</span>
-              </li>
-            </ul>
-          </div>
         </CardContent>
       </Card>
     </div>

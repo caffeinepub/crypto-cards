@@ -2,11 +2,12 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-global-page-background-styling-to-be-more-colorful-by-replacing-the-current-subtle-background-gradient-used-on-the-main-app-container-and-loading-screen-with-a-richer-multi-stop-gradient-that-incorporates-existing-theme-colors-e-g-primary-secondary-accent-while-maintaining-readable-contrast-for-all-foreground-text-in-both-light-and-dark-modes",
-      "featureTitle": "Update the global page background styling to be more colorful by replacing the current subtle background gradient (used on the main app container and loading screen) with a richer multi-stop gradient that incorporates existing theme colors (e.g., primary/secondary/accent) while maintaining readable contrast for all foreground text in both light and dark modes.",
+      "featureId": "feature-publish-deploy-the-current-draft-build-version-163-to-the-live-public-canister-so-the-application-is-accessible-via-the-public-icp-gateway-url-https-canister-id-ic0-app-not-only-via-the-draft-preview-origin",
+      "featureTitle": "Publish/deploy the current draft build (Version 163) to the Live (public) canister so the application is accessible via the public ICP gateway URL (https://<canister-id>.ic0.app), not only via the draft/preview origin.",
       "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/index.css"
+        "frontend/src/components/AdminSettings.tsx",
+        "frontend/src/components/LivePublishStatus.tsx",
+        "frontend/src/utils/icpLinks.ts"
       ],
       "components": [
         "authorization@3.0.0",

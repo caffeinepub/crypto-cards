@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T19:20:33.512Z",
+  "generatedAt": "2026-02-11T20:25:27.345Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -12,26 +12,31 @@
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Update the global page background styling to be more colorful by replacing the current subtle background gradient (used on the main app container and loading screen) with a richer multi-stop gradient that incorporates existing theme colors (e.g., primary/secondary/accent) while maintaining readable contrast for all foreground text in both light and dark modes.",
+        "summary": "Publish/deploy the current draft build (Version 163) to the Live (public) canister so the application is accessible via the public ICP gateway URL (https://<canister-id>.ic0.app), not only via the draft/preview origin.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/index.css",
-          "frontend/src/App.tsx"
+          "frontend/src/utils/icpLinks.ts",
+          "frontend/src/components/LivePublishStatus.tsx",
+          "frontend/src/components/AdminSettings.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/index.css",
-          "frontend/src/App.tsx"
+          "frontend/src/utils/icpLinks.ts",
+          "frontend/src/components/LivePublishStatus.tsx",
+          "frontend/src/components/AdminSettings.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
+    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/App.tsx",
-    "frontend/src/index.css",
+    "frontend/src/components/AdminSettings.tsx",
+    "frontend/src/components/LivePublishStatus.tsx",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/utils/icpLinks.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

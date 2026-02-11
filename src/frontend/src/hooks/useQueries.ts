@@ -44,7 +44,7 @@ export function useSaveCallerUserProfile() {
   });
 }
 
-// Canister Build Metadata
+// Canister Build Metadata with improved caching and refetch behavior
 export function useGetCanisterBuildMetadata() {
   const { actor, isFetching } = useActor();
 
@@ -55,7 +55,9 @@ export function useGetCanisterBuildMetadata() {
       return actor.getCanisterBuildMetadata();
     },
     enabled: !!actor && !isFetching,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000, // Consider data stale after 30 seconds
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    retry: 2, // Retry failed requests twice
   });
 }
 

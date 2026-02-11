@@ -15,7 +15,7 @@ export default function LobbyRoom() {
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            <strong>Coming Soon:</strong> Multiplayer lobby rooms are currently under development.
+            Multiplayer lobby rooms are currently under development.
           </AlertDescription>
         </Alert>
       </CardContent>

@@ -31,7 +31,7 @@ export default function TournamentSection({ gameMode }: TournamentSectionProps) 
               className="w-16 h-16 opacity-50"
             />
           </div>
-          <CardTitle>Tournaments Coming Soon</CardTitle>
+          <CardTitle>Tournaments</CardTitle>
           <CardDescription>
             {gameMode === 'forReal'
               ? 'Multi-round tournaments with real crypto prizes on Base network'
