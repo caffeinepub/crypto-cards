@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, Zap } from 'lucide-react';
+import { AlertCircle, Zap, Spade, Diamond } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GameMode } from '../App';
 
@@ -15,9 +15,7 @@ export default function LobbyBrowser({ gameMode, onQuickPlay }: LobbyBrowserProp
       <div>
         <h2 className="text-3xl font-bold flex items-center gap-2">
           <Zap className="w-8 h-8 text-primary" />
-          <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-            Game Lobbies
-          </span>
+          <span className="gradient-text">Game Lobbies</span>
         </h2>
         <p className="text-muted-foreground mt-2">
           {gameMode === 'real'
@@ -29,36 +27,52 @@ export default function LobbyBrowser({ gameMode, onQuickPlay }: LobbyBrowserProp
       <Alert>
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          <strong>Coming Soon:</strong> Lobby browsing and multiplayer matchmaking features are currently under development. Use Quick Play to start a game now.
+          <strong>Coming Soon:</strong> Lobby browsing and multiplayer matchmaking features are currently under development.
         </AlertDescription>
       </Alert>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Play</CardTitle>
-          <CardDescription>
-            Start a game instantly with AI opponents
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Button
-              onClick={() => onQuickPlay('spades')}
-              size="lg"
-              className="h-24 text-lg font-bold bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
-            >
-              Play Spades
-            </Button>
-            <Button
-              onClick={() => onQuickPlay('omaha4Card')}
-              size="lg"
-              className="h-24 text-lg font-bold bg-gradient-to-r from-accent to-primary hover:from-accent/90 hover:to-primary/90"
-            >
-              Play Pot Limit Omaha
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Quick Play Section */}
+      <div>
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <Zap className="w-5 h-5 text-accent" />
+          Quick Play
+        </h3>
+        <div className="grid md:grid-cols-2 gap-4">
+          <Card className="hover:border-primary transition-colors cursor-pointer" onClick={() => onQuickPlay('spades')}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Spade className="w-5 h-5" />
+                Spades
+              </CardTitle>
+              <CardDescription>
+                Classic trick-taking game. Win tricks and avoid penalties.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button className="w-full">
+                Play Spades
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:border-primary transition-colors cursor-pointer" onClick={() => onQuickPlay('omaha4Card')}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Diamond className="w-5 h-5" />
+                Pot Limit Omaha
+              </CardTitle>
+              <CardDescription>
+                4-card Omaha poker. Use exactly 2 hole cards + 3 community cards.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button className="w-full">
+                Play Omaha
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

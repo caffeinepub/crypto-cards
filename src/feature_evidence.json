@@ -1,4 +1,88 @@
 {
   "kind": "feature_evidence_report",
-  "features": []
+  "features": [
+    {
+      "featureId": "feature-restore-the-app-s-visual-look-to-a-stable-consistent-theme-by-removing-or-refactoring-any-global-css-overrides-that-break-shadcn-tailwind-component-styling-e-g-excessive-important-utility-redefinitions-global-element-overrides-while-preserving-a-coherent-dark-card-game-aesthetic",
+      "featureTitle": "Restore the app’s visual look to a stable, consistent theme by removing or refactoring any global CSS overrides that break Shadcn/Tailwind component styling (e.g., excessive `!important` utility redefinitions, global element overrides) while preserving a coherent dark card-game aesthetic.",
+      "files": [
+        "frontend/src/index.css"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "http-outcalls@3.0.0",
+        "stripe@3.0.0",
+        "blob-storage@4.0.0",
+        "qr-code@1.0.0",
+        "camera@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-make-quick-play-actually-start-a-working-game-not-a-placeholder-for-both-spades-and-pot-limit-omaha-4-card-so-the-user-can-play-a-basic-end-to-end-game-loop-start-game-see-cards-state-take-actions-plays-see-outcome-winner-exit-back-to-lobbies",
+      "featureTitle": "Make “Quick Play” actually start a working game (not a placeholder) for both Spades and Pot Limit Omaha (4-card) so the user can play a basic end-to-end game loop (start game → see cards/state → take actions/plays → see outcome/winner → exit back to lobbies).",
+      "files": [
+        "frontend/src/components/LobbyBrowser.tsx",
+        "frontend/src/components/QuickPlayGame.tsx",
+        "frontend/src/games/omaha/bots.ts",
+        "frontend/src/games/omaha/engine.ts",
+        "frontend/src/games/omaha/handEvaluator.ts",
+        "frontend/src/games/omaha/types.ts",
+        "frontend/src/games/spades/bots.ts",
+        "frontend/src/games/spades/engine.ts",
+        "frontend/src/games/spades/types.ts"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "http-outcalls@3.0.0",
+        "stripe@3.0.0",
+        "blob-storage@4.0.0",
+        "qr-code@1.0.0",
+        "camera@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-the-frontend-quick-play-flow-is-correctly-wired-to-whatever-backend-game-session-apis-exist-or-add-the-required-backend-apis-so-the-game-state-is-deterministic-and-does-not-get-stuck-e-g-no-dead-turns-no-missing-state-transitions-no-silent-failures",
+      "featureTitle": "Ensure the frontend Quick Play flow is correctly wired to whatever backend game/session APIs exist (or add the required backend APIs) so the game state is deterministic and does not get stuck (e.g., no dead turns, no missing state transitions, no silent failures).",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/components/QuickPlayGame.tsx",
+        "frontend/src/games/session/quickPlaySession.ts",
+        "frontend/src/hooks/useQuickPlaySession.ts"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "http-outcalls@3.0.0",
+        "stripe@3.0.0",
+        "blob-storage@4.0.0",
+        "qr-code@1.0.0",
+        "camera@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    }
+  ]
 }

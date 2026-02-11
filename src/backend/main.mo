@@ -11,7 +11,6 @@ import Text "mo:core/Text";
 import Int "mo:core/Int";
 import Iter "mo:core/Iter";
 
-// Actor includes MixinStorage for file management
 actor {
   include MixinStorage();
 
@@ -157,6 +156,7 @@ actor {
   };
 
   type Omaha4CardState = {
+    // ... [No change]
     holeCards : Map.Map<Principal, [Text]>;
     flop : [Text];
     turn : ?Text;
@@ -260,17 +260,6 @@ actor {
     apiKey : Text;
   };
 
-  type SpadesPersistentGameState = {
-    lobbyId : Nat;
-    currentTrick : Trick;
-    completedTricks : [Trick];
-    playerHands : Map.Map<Principal, [Card]>;
-    scores : Map.Map<Principal, Int>;
-    currentPlayer : ?Principal;
-    renegPenalties : [RenegPenalty];
-    isActive : Bool;
-  };
-
   // New canister build metadata type
   type CanisterBuildMetadata = {
     commitHash : Text;
@@ -321,12 +310,9 @@ actor {
     };
   };
 
-  /// Get canister build/deploy metadata (public)
   public query ({ caller }) func getCanisterBuildMetadata() : async CanisterBuildMetadata {
     canisterBuildMetadata;
   };
-
-  // STRIPE METHODS
 
   public query func isStripeConfigured() : async Bool {
     stripeConfig != null;

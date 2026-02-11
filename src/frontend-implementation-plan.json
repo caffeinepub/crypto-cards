@@ -1,6 +1,116 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Stable Live publishing build/deploy metadata verification (frontend-only)",
-  "requirements": []
+  "title": "Fix theme regressions and implement playable Quick Play Spades + Omaha",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "summary": "Remove/refactor global CSS overrides that break shadcn/Tailwind styling while keeping a coherent dark card-game theme.",
+      "acceptanceCriteria": [
+        "All primary UI surfaces (Header, Tabs, Cards, Buttons, Modals) render with consistent spacing, readable contrast, and no unintended overrides (e.g., components no longer appear visually “broken” or inconsistent across tabs).",
+        "No global CSS rules override core Tailwind utility classes in a way that changes unrelated components (e.g., removing/reducing `!important` redefinitions for common utilities like .bg-primary/.text-primary/.bg-gradient-* if they cause regressions).",
+        "The app renders correctly on both mobile and desktop without elements overlapping or becoming unclickable."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/index.css",
+          "operation": "modify",
+          "description": "Refactor global styles to avoid overriding Tailwind/shadcn tokens and utilities: remove/limit `!important` utility redefinitions (e.g., `.bg-primary`, `.text-primary`, gradient utility overrides), remove overly-broad global selectors that affect all elements (e.g., `*, *::before, *::after` filter reset, global `pointer-events: auto !important`), and scope any necessary tweaks to app-specific utility classes. Preserve the dark card-game aesthetic primarily through CSS variables and Tailwind theme tokens rather than global overrides."
+        },
+        {
+          "path": "frontend/tailwind.config.js",
+          "operation": "modify",
+          "description": "Validate/adjust Tailwind theme token mapping (background/foreground/card/popover/primary/accent, etc.) so shadcn components consistently derive colors from CSS variables without needing global utility overrides."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Replace Quick Play placeholders with fully playable single-player Spades and Pot Limit Omaha (4-card) end-to-end loops including actions, state updates, outcome, and exit back to lobbies.",
+      "acceptanceCriteria": [
+        "Clicking “Play Spades” starts a playable Spades experience with at least: dealing hands, enforcing turn order, playing cards to a trick, trick resolution, and a simple scoring/win condition.",
+        "Clicking “Play Pot Limit Omaha” starts a playable Omaha experience with at least: dealing 4 hole cards, revealing flop/turn/river in order, basic betting actions (check/call/bet/fold) against bots, and end-of-hand resolution (show winner).",
+        "The Quick Play screen no longer shows “Coming Soon” for core gameplay; it renders interactive controls and live game state updates.",
+        "Exiting a game reliably returns to the “Game Lobbies” tab without requiring a hard refresh."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/LobbyBrowser.tsx",
+          "operation": "modify",
+          "description": "Update the Quick Play lobby UI copy/state so it no longer communicates core gameplay as “Coming Soon”, and ensure the two Quick Play buttons clearly start Spades and Omaha gameplay immediately."
+        },
+        {
+          "path": "frontend/src/components/QuickPlayGame.tsx",
+          "operation": "modify",
+          "description": "Implement full interactive gameplay UI for Spades and Pot Limit Omaha (4-card): render the player hand, current turn/street, action controls, trick/hand history, and a clear winner/outcome view. Ensure Exit Game always returns the user to the Game Lobbies tab via the existing onExit callback."
+        },
+        {
+          "path": "frontend/src/games/spades/types.ts",
+          "operation": "create",
+          "description": "Add Spades domain types (card, suit/rank, player, trick, scoring summary) used by the Spades engine and UI."
+        },
+        {
+          "path": "frontend/src/games/spades/engine.ts",
+          "operation": "create",
+          "description": "Implement a deterministic Spades game engine to support: shuffling/dealing, legal move validation (follow suit, spades trump/broken), turn order, trick resolution, trick counting, and a simple win condition. Return clear English error messages for invalid actions."
+        },
+        {
+          "path": "frontend/src/games/spades/bots.ts",
+          "operation": "create",
+          "description": "Implement simple bot decision-making for Spades that always chooses a legal card and progresses the game without dead turns."
+        },
+        {
+          "path": "frontend/src/games/omaha/types.ts",
+          "operation": "create",
+          "description": "Add Omaha domain types (cards, players, streets, betting state, actions, showdown result) used by the Omaha engine and UI."
+        },
+        {
+          "path": "frontend/src/games/omaha/handEvaluator.ts",
+          "operation": "create",
+          "description": "Implement Omaha hand evaluation for showdown with the Omaha rule (exactly 2 hole cards + 3 community cards). Provide a winner determination and human-readable hand description for the UI."
+        },
+        {
+          "path": "frontend/src/games/omaha/engine.ts",
+          "operation": "create",
+          "description": "Implement a deterministic Pot Limit Omaha (4-card) game engine to support: dealing 4 hole cards, community card progression (flop/turn/river), betting rounds, and end-of-hand resolution with winner selection. Return clear English errors for invalid actions."
+        },
+        {
+          "path": "frontend/src/games/omaha/bots.ts",
+          "operation": "create",
+          "description": "Implement simple bot decision-making for Omaha betting rounds (check/call/bet/fold) to ensure the hand always advances and resolves."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Make Quick Play state transitions deterministic and robust by centralizing session/state management, surfacing errors in English, and integrating with backend game/session capabilities when available.",
+      "acceptanceCriteria": [
+        "A new game session can be created from the frontend and returns an initialized state every time.",
+        "All gameplay actions used by the UI (play card, advance street, bet/fold/call/check, etc.) return updated state and handle invalid actions with clear English errors.",
+        "No uncaught exceptions occur in the UI during a normal game loop; errors are surfaced to the user in English (toast/alert)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/games/session/quickPlaySession.ts",
+          "operation": "create",
+          "description": "Create a small session manager that initializes a new Quick Play session deterministically (seeded RNG), holds current game state, and exposes a single action dispatcher that returns updated state or a clear English error. Include an adapter layer that can call backend game/session functions if they exist on the actor at runtime, otherwise fall back to the local game engines (no silent failures)."
+        },
+        {
+          "path": "frontend/src/hooks/useQuickPlaySession.ts",
+          "operation": "create",
+          "description": "Add a React hook that wraps the Quick Play session manager, integrates with UI state updates, and normalizes errors into user-friendly English messages suitable for sonner toasts."
+        },
+        {
+          "path": "frontend/src/components/QuickPlayGame.tsx",
+          "operation": "modify",
+          "description": "Wire the gameplay UI to the centralized Quick Play session hook so every user action (play card, check/call/bet/fold, advance street where applicable) updates state deterministically and displays invalid-action or connectivity errors in English using toast/alert. Ensure no uncaught exceptions bubble to the UI."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Ensure the Quick Play mount/unmount lifecycle reliably resets session state between games (via the existing gameKey pattern or hook reset) and that exiting a game always returns to the Game Lobbies tab without requiring refresh."
+        }
+      ]
+    }
+  ]
 }

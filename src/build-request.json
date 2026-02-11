@@ -1,50 +1,76 @@
 {
   "kind": "build_request",
-  "title": "Enable stable backend build/deploy metadata updates for Live publishing verification",
-  "priority": "normal",
+  "title": "Fix UI regression and make Quick Play card games actually playable",
+  "priority": "high",
   "requirements": [
     {
-      "id": "REQ-12",
-      "text": "Add a backend (Motoko) admin-only update method for canister build/deploy metadata so the Live Status UI can reliably verify what version is running after publishing to Live.",
-      "target": "backend",
+      "id": "REQ-1",
+      "text": "Restore the app’s visual look to a stable, consistent theme by removing or refactoring any global CSS overrides that break Shadcn/Tailwind component styling (e.g., excessive `!important` utility redefinitions, global element overrides) while preserving a coherent dark card-game aesthetic.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-3"
         ],
         "quotes": [
-          "Yes"
+          "No just messed everything up the look and the game still isn't working"
         ]
       },
       "acceptanceCriteria": [
-        "backend/main.mo exposes a new shared method (admin-only) that updates canisterBuildMetadata (commitHash, buildTime, dfxVersion).",
-        "Calling the new update method as a non-admin traps with an English Unauthorized message.",
-        "getCanisterBuildMetadata continues to be a public query and always returns a valid CanisterBuildMetadata record with sensible defaults when fields have not been set (commitHash=\"\", buildTime=0, dfxVersion=\"\").",
-        "The existing frontend query useGetCanisterBuildMetadata (frontend/src/hooks/useQueries.ts) continues to work without any candid/type mismatches."
+        "All primary UI surfaces (Header, Tabs, Cards, Buttons, Modals) render with consistent spacing, readable contrast, and no unintended overrides (e.g., components no longer appear visually “broken” or inconsistent across tabs).",
+        "No global CSS rules override core Tailwind utility classes in a way that changes unrelated components (e.g., removing/reducing `!important` redefinitions for common utilities like .bg-primary/.text-primary/.bg-gradient-* if they cause regressions).",
+        "The app renders correctly on both mobile and desktop without elements overlapping or becoming unclickable."
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Make “Quick Play” actually start a working game (not a placeholder) for both Spades and Pot Limit Omaha (4-card) so the user can play a basic end-to-end game loop (start game → see cards/state → take actions/plays → see outcome/winner → exit back to lobbies).",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-3"
+        ],
+        "quotes": [
+          "No just messed everything up the look and the game still isn't working"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Clicking “Play Spades” starts a playable Spades experience with at least: dealing hands, enforcing turn order, playing cards to a trick, trick resolution, and a simple scoring/win condition.",
+        "Clicking “Play Pot Limit Omaha” starts a playable Omaha experience with at least: dealing 4 hole cards, revealing flop/turn/river in order, basic betting actions (check/call/bet/fold) against bots, and end-of-hand resolution (show winner).",
+        "The Quick Play screen no longer shows “Coming Soon” for core gameplay; it renders interactive controls and live game state updates.",
+        "Exiting a game reliably returns to the “Game Lobbies” tab without requiring a hard refresh."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Ensure the frontend Quick Play flow is correctly wired to whatever backend game/session APIs exist (or add the required backend APIs) so the game state is deterministic and does not get stuck (e.g., no dead turns, no missing state transitions, no silent failures).",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-3"
+        ],
+        "quotes": [
+          "No just messed everything up the look and the game still isn't working"
+        ]
+      },
+      "acceptanceCriteria": [
+        "A new game session can be created from the frontend and returns an initialized state every time.",
+        "All gameplay actions used by the UI (play card, advance street, bet/fold/call/check, etc.) return updated state and handle invalid actions with clear English errors.",
+        "No uncaught exceptions occur in the UI during a normal game loop; errors are surfaced to the user in English (toast/alert)."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single-actor Motoko canister (all logic in backend/main.mo).",
-    "Do not modify any frontend files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or any files in frontend/src/components/ui.",
+    "Backend must remain a single Motoko actor in backend/main.mo; only add backend/migration.mo if state schema changes require migration.",
+    "Do not modify files under frontend/immutablePaths (e.g., frontend/src/hooks/useInternetIdentity.ts(x), frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui). Compose with these components/hooks instead.",
     "Use English for any user-facing text."
   ],
   "nonGoals": [
-    "Implementing the actual Caffeine platform 'Publish to Live' action inside the app UI.",
-    "Adding new authentication providers beyond Internet Identity.",
-    "Changing gameplay, wallet, deposit/withdrawal, or lobby/tournament behavior."
+    "Do not implement multiplayer lobby browsing/matchmaking beyond Quick Play unless it is required to make Quick Play functional.",
+    "Do not add third-party auth providers (only Internet Identity is supported).",
+    "Do not add external databases or non-Motoko backend services."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

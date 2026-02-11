@@ -8,7 +8,8 @@ import { Wallet, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import { GameMode } from '../App';
 import { useWeb3Wallet } from '../hooks/useWeb3Wallet';
-import { useGetCallerUserProfile, useSaveCallerUserProfile, useCreateProfile } from '../hooks/useQueries';
+import { useGetCallerUserProfile, useSaveCallerUserProfile } from '../hooks/useQueries';
+import { useInternetIdentity } from '../hooks/useInternetIdentity';
 
 interface ProfileSetupModalProps {
   gameMode: GameMode;
@@ -18,10 +19,11 @@ export default function ProfileSetupModal({ gameMode }: ProfileSetupModalProps) 
   const [username, setUsername] = useState('');
   const [showModal, setShowModal] = useState(false);
   const wallet = useWeb3Wallet();
+  const { identity } = useInternetIdentity();
+  const isAuthenticated = !!identity;
   
   const { data: userProfile, isLoading: profileLoading, isFetched } = useGetCallerUserProfile();
   const saveProfileMutation = useSaveCallerUserProfile();
-  const createProfileMutation = useCreateProfile();
 
   // Generate or retrieve guest wallet address
   const guestWalletAddress = (() => {
@@ -39,7 +41,7 @@ export default function ProfileSetupModal({ gameMode }: ProfileSetupModalProps) 
 
   // Check if profile exists
   useEffect(() => {
-    if (gameMode === 'real' && isFetched && !profileLoading && userProfile === null && wallet.isConnected) {
+    if (gameMode === 'real' && isAuthenticated && isFetched && !profileLoading && userProfile === null) {
       setShowModal(true);
       setUsername(`Player_${currentAddress.slice(2, 8)}`);
     } else if (gameMode === 'fun') {
@@ -49,7 +51,7 @@ export default function ProfileSetupModal({ gameMode }: ProfileSetupModalProps) 
         setUsername(`Guest_${guestWalletAddress.slice(2, 8)}`);
       }
     }
-  }, [gameMode, userProfile, profileLoading, isFetched, wallet.isConnected, currentAddress, guestWalletAddress]);
+  }, [gameMode, userProfile, profileLoading, isFetched, isAuthenticated, currentAddress, guestWalletAddress]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,16 +68,6 @@ export default function ProfileSetupModal({ gameMode }: ProfileSetupModalProps) 
           name: username.trim(),
           walletAddress: currentAddress,
         });
-
-        // Also create player profile if it doesn't exist
-        try {
-          await createProfileMutation.mutateAsync(currentAddress);
-        } catch (error: any) {
-          // Ignore if profile already exists
-          if (!error.message?.includes('already exists')) {
-            console.error('Failed to create player profile:', error);
-          }
-        }
 
         toast.success('Profile created successfully on network!');
         setShowModal(false);
@@ -162,9 +154,9 @@ export default function ProfileSetupModal({ gameMode }: ProfileSetupModalProps) 
           <Button 
             type="submit" 
             className="w-full"
-            disabled={saveProfileMutation.isPending || createProfileMutation.isPending}
+            disabled={saveProfileMutation.isPending}
           >
-            {saveProfileMutation.isPending || createProfileMutation.isPending 
+            {saveProfileMutation.isPending 
               ? 'Creating Profile...' 
               : 'Create Profile & Start Playing'}
           </Button>

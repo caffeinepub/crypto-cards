@@ -1,21 +1,70 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-10T22:39:27.176Z",
+  "generatedAt": "2026-02-11T15:24:34.401Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 1,
-    "implemented": 0,
+    "total": 3,
+    "implemented": 3,
     "items": [
       {
-        "id": "REQ-12",
-        "summary": "Add a backend (Motoko) admin-only update method for canister build/deploy metadata so the Live Status UI can reliably verify what version is running after publishing to Live.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "id": "REQ-1",
+        "summary": "Restore the app’s visual look to a stable, consistent theme by removing or refactoring any global CSS overrides that break Shadcn/Tailwind component styling (e.g., excessive `!important` utility redefinitions, global element overrides) while preserving a coherent dark card-game aesthetic.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/index.css",
+          "frontend/tailwind.config.js"
+        ],
+        "matchedFiles": [
+          "frontend/src/index.css"
+        ]
+      },
+      {
+        "id": "REQ-2",
+        "summary": "Make “Quick Play” actually start a working game (not a placeholder) for both Spades and Pot Limit Omaha (4-card) so the user can play a basic end-to-end game loop (start game → see cards/state → take actions/plays → see outcome/winner → exit back to lobbies).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/LobbyBrowser.tsx",
+          "frontend/src/components/QuickPlayGame.tsx",
+          "frontend/src/games/spades/types.ts",
+          "frontend/src/games/spades/engine.ts",
+          "frontend/src/games/spades/bots.ts",
+          "frontend/src/games/omaha/types.ts",
+          "frontend/src/games/omaha/handEvaluator.ts",
+          "frontend/src/games/omaha/engine.ts",
+          "frontend/src/games/omaha/bots.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/LobbyBrowser.tsx",
+          "frontend/src/components/QuickPlayGame.tsx",
+          "frontend/src/games/spades/types.ts",
+          "frontend/src/games/spades/engine.ts",
+          "frontend/src/games/spades/bots.ts",
+          "frontend/src/games/omaha/types.ts",
+          "frontend/src/games/omaha/handEvaluator.ts",
+          "frontend/src/games/omaha/engine.ts",
+          "frontend/src/games/omaha/bots.ts"
+        ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Ensure the frontend Quick Play flow is correctly wired to whatever backend game/session APIs exist (or add the required backend APIs) so the game state is deterministic and does not get stuck (e.g., no dead turns, no missing state transitions, no silent failures).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/games/session/quickPlaySession.ts",
+          "frontend/src/hooks/useQuickPlaySession.ts",
+          "frontend/src/components/QuickPlayGame.tsx",
+          "frontend/src/App.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/games/session/quickPlaySession.ts",
+          "frontend/src/hooks/useQuickPlaySession.ts",
+          "frontend/src/components/QuickPlayGame.tsx",
+          "frontend/src/App.tsx"
+        ]
       }
     ]
   },
@@ -23,11 +72,25 @@
     "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
+    "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
+    "frontend/src/App.tsx",
     "frontend/src/backend.d.ts",
     "frontend/src/backend.ts",
+    "frontend/src/components/LobbyBrowser.tsx",
+    "frontend/src/components/ProfileSetupModal.tsx",
+    "frontend/src/components/QuickPlayGame.tsx",
     "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
+    "frontend/src/games/omaha/bots.ts",
+    "frontend/src/games/omaha/engine.ts",
+    "frontend/src/games/omaha/handEvaluator.ts",
+    "frontend/src/games/omaha/types.ts",
+    "frontend/src/games/session/quickPlaySession.ts",
+    "frontend/src/games/spades/bots.ts",
+    "frontend/src/games/spades/engine.ts",
+    "frontend/src/games/spades/types.ts",
+    "frontend/src/hooks/useQuickPlaySession.ts",
+    "frontend/src/index.css",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",
