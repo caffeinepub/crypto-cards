@@ -3,38 +3,27 @@
   "projectStateVersion": 3,
   "summary": "New project",
   "architectural_notes": [],
-  "known_issues": [
-    "Connect wallet button appears unresponsive (nothing happens when pressed)."
-  ],
-  "isFixRequest": true,
+  "known_issues": [],
+  "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-ensure-the-walletconnect-connection-path-triggers-visible-ui-feedback-by-rendering-a-walletconnect-modal-whenever-useweb3wallet-showwalletconnectmodal-is-set-to-true-and-allow-the-modal-to-be-closed-which-must-set-showwalletconnectmodal-back-to-false",
-      "title": "Ensure the WalletConnect connection path triggers visible UI feedback by rendering a WalletConnect modal whenever `useWeb3Wallet().showWalletConnectModal` is set to true, and allow the modal to be closed (which must set `showWalletConnectModal` back to false).",
+      "id": "feature-update-the-global-page-background-styling-to-be-more-colorful-by-replacing-the-current-subtle-background-gradient-used-on-the-main-app-container-and-loading-screen-with-a-richer-multi-stop-gradient-that-incorporates-existing-theme-colors-e-g-primary-secondary-accent-while-maintaining-readable-contrast-for-all-foreground-text-in-both-light-and-dark-modes",
+      "title": "Update the global page background styling to be more colorful by replacing the current subtle background gradient (used on the main app container and loading screen) with a richer multi-stop gradient that incorporates existing theme colors (e.g., primary/secondary/accent) while maintaining readable contrast for all foreground text in both light and dark modes.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
-    },
-    {
-      "id": "feature-ensure-users-see-a-clear-install-prompt-when-no-injected-wallet-provider-is-detected-by-mounting-walletinstallmodal-at-the-app-level-so-that-wallet-walletnotdetected-results-in-a-visible-modal-instead-of-only-setting-state",
-      "title": "Ensure users see a clear install prompt when no injected wallet provider is detected by mounting `WalletInstallModal` at the app level so that `wallet.walletNotDetected` results in a visible modal instead of only setting state.",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-user-facing-error-and-progress-feedback-for-wallet-connections-when-wallet-connect-fails-or-a-request-is-pending-rejected-show-an-english-toast-and-or-inline-message-and-reflect-wallet-isconnecting-by-disabling-relevant-connect-ui-elements-and-indicating-connection-is-in-progress",
-      "title": "Add user-facing error and progress feedback for wallet connections: when `wallet.connect(...)` fails or a request is pending/rejected, show an English toast and/or inline message and reflect `wallet.isConnecting` by disabling relevant connect UI elements and indicating connection is in progress.",
-      "reqIds": [
-        "REQ-3"
-      ],
-      "version": 1
     }
   ],
-  "new_feature_requests": [],
-  "projectName": "Fix unresponsive Connect Wallet flow (WalletConnect modal, install prompt, and error feedback)",
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Make the background color more colorful",
+      "reqIds": [],
+      "status": "pending"
+    }
+  ],
+  "projectName": "Make the app background more colorful",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

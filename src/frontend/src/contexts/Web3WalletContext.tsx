@@ -1,9 +1,8 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, ReactNode } from 'react';
 import { useWeb3Wallet } from '../hooks/useWeb3Wallet';
+import type { WalletType } from '../hooks/useWeb3Wallet';
 
-type WalletType = 'coinbase' | 'metamask' | 'walletconnect' | 'guest' | null;
-
-interface Web3WalletContextValue {
+interface Web3WalletContextType {
   address: string | null;
   balance: string | null;
   chainId: number | null;
@@ -22,27 +21,16 @@ interface Web3WalletContextValue {
   showWalletConnectModal: boolean;
   setShowWalletConnectModal: (show: boolean) => void;
   dismissWalletNotDetected: () => void;
+  walletConnectUri: string | null;
 }
 
-const Web3WalletContext = createContext<Web3WalletContextValue | undefined>(undefined);
+const Web3WalletContext = createContext<Web3WalletContextType | undefined>(undefined);
 
 export function Web3WalletProvider({ children }: { children: ReactNode }) {
   const wallet = useWeb3Wallet();
 
-  // Add a dismiss function that clears the walletNotDetected state without disconnecting
-  const dismissWalletNotDetected = () => {
-    // We'll need to expose this from the hook, but for now we can use disconnect
-    // which will be improved in the hook itself
-    wallet.disconnect();
-  };
-
-  const value: Web3WalletContextValue = {
-    ...wallet,
-    dismissWalletNotDetected,
-  };
-
   return (
-    <Web3WalletContext.Provider value={value}>
+    <Web3WalletContext.Provider value={wallet}>
       {children}
     </Web3WalletContext.Provider>
   );

@@ -15,6 +15,23 @@ export interface CanisterBuildMetadata {
   'commitHash' : string,
   'buildTime' : bigint,
 }
+export interface FlexaDeposit {
+  'status' : { 'pending' : null } |
+    { 'confirmed' : null } |
+    { 'failed' : null },
+  'depositId' : string,
+  'createdAt' : bigint,
+  'walletAddress' : [] | [WalletAddress],
+  'amount' : bigint,
+  'playerPrincipal' : [] | [Principal],
+}
+export interface FlexaDepositIntent {
+  'depositId' : string,
+  'principal' : Principal,
+  'createdAt' : bigint,
+  'walletAddress' : string,
+  'amount' : bigint,
+}
 export interface ShoppingItem {
   'productName' : string,
   'currency' : string,
@@ -80,7 +97,20 @@ export interface _SERVICE {
     _CaffeineStorageRefillResult
   >,
   '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
+  'adminCreateDeposit' : ActorMethod<
+    [string, bigint, Principal, string],
+    undefined
+  >,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'batchCreateDeposits' : ActorMethod<
+    [Array<[string, bigint, Principal, string]>],
+    undefined
+  >,
+  'batchUpdateDepositStatus' : ActorMethod<
+    [Array<[string, string]>],
+    undefined
+  >,
+  'cancelDeposit' : ActorMethod<[string], undefined>,
   'createCheckoutSession' : ActorMethod<
     [Array<ShoppingItem>, string, string],
     string
@@ -88,9 +118,15 @@ export interface _SERVICE {
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getCanisterBuildMetadata' : ActorMethod<[], CanisterBuildMetadata>,
+  'getDepositsByPrincipal' : ActorMethod<[Principal], Array<FlexaDeposit>>,
+  'getDepositsByWallet' : ActorMethod<[string], Array<FlexaDeposit>>,
   'getStripeSessionStatus' : ActorMethod<[string], StripeSessionStatus>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'initializeAccessControl' : ActorMethod<[], undefined>,
+  /**
+   * / Flexa deposit intent endpoint
+   */
+  'initiateFlexaDeposit' : ActorMethod<[bigint, string], FlexaDepositIntent>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isStripeConfigured' : ActorMethod<[], boolean>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
@@ -100,6 +136,10 @@ export interface _SERVICE {
   'setCanisterBuildMetadata' : ActorMethod<[string, bigint, string], undefined>,
   'setStripeConfiguration' : ActorMethod<[StripeConfiguration], undefined>,
   'transform' : ActorMethod<[TransformationInput], TransformationOutput>,
+  /**
+   * / Flexa deposit callback (simulated webhook)
+   */
+  'updateFlexaDepositStatus' : ActorMethod<[string, string], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

@@ -1,53 +1,91 @@
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { QrCode, Smartphone, ExternalLink, Copy, CheckCircle2 } from 'lucide-react';
-import { useState } from 'react';
+import { Copy, CheckCircle2, Smartphone, Monitor, Loader2, ExternalLink, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useWeb3Wallet } from '../hooks/useWeb3Wallet';
 
 interface WalletConnectModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-// Detect if user is on mobile device
-function isMobileDevice(): boolean {
-  return /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-}
-
 export default function WalletConnectModal({ open, onOpenChange }: WalletConnectModalProps) {
-  const [copiedUri, setCopiedUri] = useState(false);
-  
-  const isMobile = isMobileDevice();
-  
-  // Example WalletConnect URI (in production, this would be generated dynamically)
-  const exampleUri = 'wc:00e46b69-d0cc-4b3e-b6a2-cee442f97188@2?relay-protocol=irn&symKey=...';
-  
-  const handleCopyUri = () => {
-    navigator.clipboard.writeText(exampleUri);
-    setCopiedUri(true);
-    toast.success('URI copied to clipboard');
-    setTimeout(() => setCopiedUri(false), 2000);
+  const [copied, setCopied] = useState(false);
+  const wallet = useWeb3Wallet();
+  const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+  const uri = wallet.walletConnectUri;
+  const isGenerating = !uri && wallet.isConnecting;
+
+  // Auto-close on successful connection
+  useEffect(() => {
+    if (wallet.isConnected && wallet.selectedWallet === 'walletconnect') {
+      onOpenChange(false);
+    }
+  }, [wallet.isConnected, wallet.selectedWallet, onOpenChange]);
+
+  const handleClose = () => {
+    // Clear any errors when closing
+    wallet.clearError();
+    onOpenChange(false);
   };
 
-  const handleOpenCoinbaseWallet = () => {
-    const deepLink = `https://go.cb-w.com/dapp?cb_url=${encodeURIComponent(window.location.href)}`;
+  const handleCopyUri = async () => {
+    if (!uri) {
+      toast.error('Connection URI not available yet');
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(uri);
+      setCopied(true);
+      toast.success('Connection URI copied to clipboard');
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('[WalletConnect] Failed to copy URI:', err);
+      toast.error('Failed to copy URI');
+    }
+  };
+
+  const handleMobileConnect = (walletApp: 'coinbase' | 'metamask' | 'trust') => {
+    if (!uri) {
+      toast.error('Connection URI not available yet');
+      return;
+    }
+
+    const encodedUri = encodeURIComponent(uri);
+    let deepLink = '';
+
+    switch (walletApp) {
+      case 'coinbase':
+        deepLink = `https://go.cb-w.com/wc?uri=${encodedUri}`;
+        break;
+      case 'metamask':
+        deepLink = `https://metamask.app.link/wc?uri=${encodedUri}`;
+        break;
+      case 'trust':
+        deepLink = `https://link.trustwallet.com/wc?uri=${encodedUri}`;
+        break;
+    }
+
     window.location.href = deepLink;
   };
 
-  const handleOpenMetaMask = () => {
-    const deepLink = `https://metamask.app.link/dapp/${window.location.host}`;
-    window.location.href = deepLink;
-  };
-
-  const handleOpenTrustWallet = () => {
-    const deepLink = `https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(window.location.href)}`;
-    window.location.href = deepLink;
+  const openQRGenerator = () => {
+    if (!uri) {
+      toast.error('Connection URI not available yet');
+      return;
+    }
+    // Open a QR code generator service in a new tab
+    const qrServiceUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(uri)}`;
+    window.open(qrServiceUrl, '_blank');
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <img 
@@ -59,135 +97,178 @@ export default function WalletConnectModal({ open, onOpenChange }: WalletConnect
           </DialogTitle>
           <DialogDescription>
             {isMobile 
-              ? 'Open your mobile wallet app to connect'
-              : 'Scan QR code with your mobile wallet app'
-            }
+              ? 'Choose your wallet to connect' 
+              : 'Use your mobile wallet to connect'}
           </DialogDescription>
         </DialogHeader>
 
-        <Alert className="border-primary/50 bg-primary/5">
-          <AlertDescription>
-            <strong>Note:</strong> WalletConnect allows you to connect any mobile wallet app to this dApp.
-          </AlertDescription>
-        </Alert>
+        <div className="space-y-4">
+          {/* Generating state */}
+          {isGenerating && (
+            <div className="flex flex-col items-center justify-center py-8 space-y-4">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Generating connection...</p>
+            </div>
+          )}
 
-        {isMobile ? (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <h3 className="font-semibold text-sm flex items-center gap-2">
-                <Smartphone className="w-4 h-4" />
-                Open in Mobile Wallet
-              </h3>
-              <p className="text-xs text-muted-foreground mb-3">
-                Choose your wallet app to connect:
-              </p>
-              
-              <Button
-                variant="outline"
-                className="w-full justify-between bg-gradient-to-r from-primary/10 to-accent/10 hover:from-primary/20 hover:to-accent/20 border-2 border-primary/30"
-                onClick={handleOpenCoinbaseWallet}
-              >
-                <div className="flex items-center gap-2">
+          {/* Error state */}
+          {wallet.error && (
+            <Alert variant="destructive">
+              <XCircle className="h-4 w-4" />
+              <AlertDescription>
+                {wallet.error}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Desktop view with URI */}
+          {uri && !isMobile && (
+            <>
+              <Alert>
+                <Monitor className="h-4 w-4" />
+                <AlertDescription>
+                  Copy the connection URI below and paste it into your mobile wallet app, or generate a QR code to scan
+                </AlertDescription>
+              </Alert>
+
+              <div className="space-y-2">
+                <div className="p-3 bg-muted rounded-lg border">
+                  <p className="text-xs font-mono break-all text-muted-foreground">
+                    {uri.slice(0, 60)}...
+                  </p>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1 gap-2"
+                    onClick={handleCopyUri}
+                    disabled={!uri}
+                  >
+                    {copied ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4" />
+                        Copy URI
+                      </>
+                    )}
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    className="flex-1 gap-2"
+                    onClick={openQRGenerator}
+                    disabled={!uri}
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Generate QR
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Mobile view with deep links */}
+          {uri && isMobile && (
+            <>
+              <Alert>
+                <Smartphone className="h-4 w-4" />
+                <AlertDescription>
+                  Select your wallet to open and connect
+                </AlertDescription>
+              </Alert>
+
+              <div className="space-y-2">
+                <Button
+                  className="w-full gap-2 bg-blue-600 hover:bg-blue-700"
+                  onClick={() => handleMobileConnect('coinbase')}
+                  disabled={!uri}
+                >
                   <img 
                     src="/assets/generated/coinbase-wallet-logo-transparent.dim_64x64.png" 
-                    alt="Coinbase Wallet" 
-                    className="w-6 h-6"
+                    alt="Coinbase" 
+                    className="w-5 h-5"
                   />
-                  <span>Coinbase Wallet</span>
-                </div>
-                <ExternalLink className="w-4 h-4" />
-              </Button>
+                  Connect with Coinbase Wallet
+                </Button>
 
-              <Button
-                variant="outline"
-                className="w-full justify-between"
-                onClick={handleOpenMetaMask}
-              >
-                <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
+                  onClick={() => handleMobileConnect('metamask')}
+                  disabled={!uri}
+                >
                   <img 
                     src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" 
                     alt="MetaMask" 
-                    className="w-6 h-6"
+                    className="w-5 h-5"
                   />
-                  <span>MetaMask</span>
-                </div>
-                <ExternalLink className="w-4 h-4" />
-              </Button>
+                  Connect with MetaMask
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
+                  onClick={() => handleMobileConnect('trust')}
+                  disabled={!uri}
+                >
+                  <img 
+                    src="https://trustwallet.com/assets/images/media/assets/TWT.png" 
+                    alt="Trust Wallet" 
+                    className="w-5 h-5"
+                  />
+                  Connect with Trust Wallet
+                </Button>
+              </div>
 
               <Button
-                variant="outline"
-                className="w-full justify-between"
-                onClick={handleOpenTrustWallet}
+                variant="ghost"
+                className="w-full gap-2"
+                onClick={handleCopyUri}
+                disabled={!uri}
               >
-                <div className="flex items-center gap-2">
-                  <img 
-                    src="/assets/generated/wallet-icon-transparent.dim_64x64.png" 
-                    alt="Trust Wallet" 
-                    className="w-6 h-6"
-                  />
-                  <span>Trust Wallet</span>
-                </div>
-                <ExternalLink className="w-4 h-4" />
+                {copied ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4" />
+                    Copy URI Manually
+                  </>
+                )}
               </Button>
-            </div>
+            </>
+          )}
 
-            <div className="pt-4 border-t">
-              <p className="text-xs text-muted-foreground text-center">
-                If your wallet app is not listed, open it manually and look for "WalletConnect" or "Scan QR" option.
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <h3 className="font-semibold text-sm flex items-center gap-2">
-                <QrCode className="w-4 h-4" />
-                Scan QR Code
-              </h3>
-              
-              <div className="p-6 border-2 border-primary/30 rounded-lg bg-white flex items-center justify-center">
-                <div className="text-center space-y-3">
-                  <img 
-                    src="/assets/generated/qr-code-icon-transparent.dim_32x32.png" 
-                    alt="QR Code" 
-                    className="w-32 h-32 mx-auto opacity-50"
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    QR Code will appear here
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    (Requires WalletConnect SDK integration)
-                  </p>
-                </div>
-              </div>
-            </div>
+          {/* Awaiting approval state */}
+          {uri && wallet.isConnecting && (
+            <Alert>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <AlertDescription>
+                Waiting for wallet approval...
+              </AlertDescription>
+            </Alert>
+          )}
 
-            <div className="space-y-2">
-              <h3 className="font-semibold text-sm">How to connect:</h3>
-              <ol className="list-decimal list-inside space-y-1 text-xs text-muted-foreground ml-2">
-                <li>Open your mobile wallet app (Coinbase Wallet, MetaMask, Trust Wallet, etc.)</li>
-                <li>Look for "WalletConnect" or "Scan QR" option in the app</li>
-                <li>Scan the QR code above with your phone's camera</li>
-                <li>Approve the connection request in your wallet</li>
-              </ol>
-            </div>
-
-            <div className="pt-4 border-t">
-              <p className="text-xs text-muted-foreground text-center">
-                Don't have a mobile wallet? Install Coinbase Wallet or MetaMask on your phone first.
-              </p>
-            </div>
-          </div>
-        )}
-
-        <div className="pt-4 border-t">
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => onOpenChange(false)}
-          >
-            Cancel
-          </Button>
+          {/* Retry button on error */}
+          {wallet.error && (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                wallet.clearError();
+                wallet.connect('walletconnect');
+              }}
+            >
+              Retry Connection
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>

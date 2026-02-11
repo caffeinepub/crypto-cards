@@ -7,17 +7,15 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Settings, Percent, Save, AlertCircle, CheckCircle2, DollarSign, Wallet, UserPlus, UserMinus, Users, Trophy } from 'lucide-react';
-import { useGetHouseCutPercent, useSetHouseCut, useGetAdminStats } from '../hooks/useQueries';
 import { toast } from 'sonner';
 
 export default function AdminSettings() {
-  const { data: houseCutPercent, isLoading: isLoadingHouseCut, refetch: refetchHouseCut } = useGetHouseCutPercent();
-  const { data: adminStats, isLoading: isLoadingStats, refetch: refetchStats } = useGetAdminStats();
-  const updateHouseCut = useSetHouseCut();
-  
   const [newPercent, setNewPercent] = useState<string>('');
 
-  const currentPercent = houseCutPercent ? Number(houseCutPercent) : 5;
+  // Placeholder values since backend methods are not yet implemented
+  const currentPercent = 5;
+  const isLoadingHouseCut = false;
+  const isLoadingStats = false;
 
   const handleUpdateHouseCut = async () => {
     const percentValue = parseInt(newPercent);
@@ -29,22 +27,9 @@ export default function AdminSettings() {
       return;
     }
 
-    try {
-      await updateHouseCut.mutateAsync(BigInt(percentValue));
-      toast.success('House cut updated', {
-        description: `House cut is now set to ${percentValue}%`,
-      });
-      setNewPercent('');
-      refetchHouseCut();
-      refetchStats();
-    } catch (error: any) {
-      const errorMessage = error.message || String(error);
-      toast.error('Failed to update house cut', {
-        description: errorMessage.includes('Unauthorized') 
-          ? 'You do not have permission to update house cut'
-          : errorMessage,
-      });
-    }
+    toast.info('House cut update coming soon', {
+      description: 'This feature will be available once backend methods are implemented',
+    });
   };
 
   return (
@@ -83,45 +68,11 @@ export default function AdminSettings() {
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
               <p className="text-muted-foreground">Loading statistics...</p>
             </div>
-          ) : adminStats ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="p-4 bg-muted/50 rounded-lg">
-                <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                  <Users className="w-4 h-4" />
-                  <span className="text-sm font-medium">Active Lobbies</span>
-                </div>
-                <p className="text-3xl font-bold">{Number(adminStats.activeLobbies)}</p>
-              </div>
-              
-              <div className="p-4 bg-muted/50 rounded-lg">
-                <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                  <Trophy className="w-4 h-4" />
-                  <span className="text-sm font-medium">Active Tournaments</span>
-                </div>
-                <p className="text-3xl font-bold">{Number(adminStats.activeTournaments)}</p>
-              </div>
-              
-              <div className="p-4 bg-muted/50 rounded-lg">
-                <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                  <DollarSign className="w-4 h-4" />
-                  <span className="text-sm font-medium">Total Wagers</span>
-                </div>
-                <p className="text-3xl font-bold">{Number(adminStats.totalWagers).toLocaleString()}</p>
-              </div>
-              
-              <div className="p-4 bg-muted/50 rounded-lg">
-                <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                  <Wallet className="w-4 h-4" />
-                  <span className="text-sm font-medium">Platform Balance</span>
-                </div>
-                <p className="text-3xl font-bold">{Number(adminStats.platformBalance).toLocaleString()}</p>
-              </div>
-            </div>
           ) : (
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                Unable to load system statistics. Please try again later.
+                System statistics will be available once backend methods are implemented.
               </AlertDescription>
             </Alert>
           )}
@@ -171,11 +122,11 @@ export default function AdminSettings() {
                 </div>
                 <Button 
                   onClick={handleUpdateHouseCut}
-                  disabled={updateHouseCut.isPending || !newPercent}
+                  disabled={!newPercent}
                   className="gap-2"
                 >
                   <Save className="w-4 h-4" />
-                  {updateHouseCut.isPending ? 'Updating...' : 'Update'}
+                  Update
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">

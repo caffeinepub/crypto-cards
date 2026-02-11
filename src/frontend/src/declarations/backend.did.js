@@ -41,12 +41,31 @@ export const CanisterBuildMetadata = IDL.Record({
   'commitHash' : IDL.Text,
   'buildTime' : IDL.Int,
 });
+export const FlexaDeposit = IDL.Record({
+  'status' : IDL.Variant({
+    'pending' : IDL.Null,
+    'confirmed' : IDL.Null,
+    'failed' : IDL.Null,
+  }),
+  'depositId' : IDL.Text,
+  'createdAt' : IDL.Int,
+  'walletAddress' : IDL.Opt(WalletAddress),
+  'amount' : IDL.Nat,
+  'playerPrincipal' : IDL.Opt(IDL.Principal),
+});
 export const StripeSessionStatus = IDL.Variant({
   'completed' : IDL.Record({
     'userPrincipal' : IDL.Opt(IDL.Text),
     'response' : IDL.Text,
   }),
   'failed' : IDL.Record({ 'error' : IDL.Text }),
+});
+export const FlexaDepositIntent = IDL.Record({
+  'depositId' : IDL.Text,
+  'principal' : IDL.Principal,
+  'createdAt' : IDL.Int,
+  'walletAddress' : IDL.Text,
+  'amount' : IDL.Nat,
 });
 export const StripeConfiguration = IDL.Record({
   'allowedCountries' : IDL.Vec(IDL.Text),
@@ -98,7 +117,23 @@ export const idlService = IDL.Service({
       [],
     ),
   '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
+  'adminCreateDeposit' : IDL.Func(
+      [IDL.Text, IDL.Nat, IDL.Principal, IDL.Text],
+      [],
+      [],
+    ),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'batchCreateDeposits' : IDL.Func(
+      [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat, IDL.Principal, IDL.Text))],
+      [],
+      [],
+    ),
+  'batchUpdateDepositStatus' : IDL.Func(
+      [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text))],
+      [],
+      [],
+    ),
+  'cancelDeposit' : IDL.Func([IDL.Text], [], []),
   'createCheckoutSession' : IDL.Func(
       [IDL.Vec(ShoppingItem), IDL.Text, IDL.Text],
       [IDL.Text],
@@ -107,6 +142,16 @@ export const idlService = IDL.Service({
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getCanisterBuildMetadata' : IDL.Func([], [CanisterBuildMetadata], ['query']),
+  'getDepositsByPrincipal' : IDL.Func(
+      [IDL.Principal],
+      [IDL.Vec(FlexaDeposit)],
+      ['query'],
+    ),
+  'getDepositsByWallet' : IDL.Func(
+      [IDL.Text],
+      [IDL.Vec(FlexaDeposit)],
+      ['query'],
+    ),
   'getStripeSessionStatus' : IDL.Func([IDL.Text], [StripeSessionStatus], []),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
@@ -114,6 +159,11 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'initializeAccessControl' : IDL.Func([], [], []),
+  'initiateFlexaDeposit' : IDL.Func(
+      [IDL.Nat, IDL.Text],
+      [FlexaDepositIntent],
+      [],
+    ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'isStripeConfigured' : IDL.Func([], [IDL.Bool], ['query']),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
@@ -124,6 +174,7 @@ export const idlService = IDL.Service({
       [TransformationOutput],
       ['query'],
     ),
+  'updateFlexaDepositStatus' : IDL.Func([IDL.Text, IDL.Text], [], []),
 });
 
 export const idlInitArgs = [];
@@ -162,12 +213,31 @@ export const idlFactory = ({ IDL }) => {
     'commitHash' : IDL.Text,
     'buildTime' : IDL.Int,
   });
+  const FlexaDeposit = IDL.Record({
+    'status' : IDL.Variant({
+      'pending' : IDL.Null,
+      'confirmed' : IDL.Null,
+      'failed' : IDL.Null,
+    }),
+    'depositId' : IDL.Text,
+    'createdAt' : IDL.Int,
+    'walletAddress' : IDL.Opt(WalletAddress),
+    'amount' : IDL.Nat,
+    'playerPrincipal' : IDL.Opt(IDL.Principal),
+  });
   const StripeSessionStatus = IDL.Variant({
     'completed' : IDL.Record({
       'userPrincipal' : IDL.Opt(IDL.Text),
       'response' : IDL.Text,
     }),
     'failed' : IDL.Record({ 'error' : IDL.Text }),
+  });
+  const FlexaDepositIntent = IDL.Record({
+    'depositId' : IDL.Text,
+    'principal' : IDL.Principal,
+    'createdAt' : IDL.Int,
+    'walletAddress' : IDL.Text,
+    'amount' : IDL.Nat,
   });
   const StripeConfiguration = IDL.Record({
     'allowedCountries' : IDL.Vec(IDL.Text),
@@ -216,7 +286,23 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
+    'adminCreateDeposit' : IDL.Func(
+        [IDL.Text, IDL.Nat, IDL.Principal, IDL.Text],
+        [],
+        [],
+      ),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'batchCreateDeposits' : IDL.Func(
+        [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Nat, IDL.Principal, IDL.Text))],
+        [],
+        [],
+      ),
+    'batchUpdateDepositStatus' : IDL.Func(
+        [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text))],
+        [],
+        [],
+      ),
+    'cancelDeposit' : IDL.Func([IDL.Text], [], []),
     'createCheckoutSession' : IDL.Func(
         [IDL.Vec(ShoppingItem), IDL.Text, IDL.Text],
         [IDL.Text],
@@ -229,6 +315,16 @@ export const idlFactory = ({ IDL }) => {
         [CanisterBuildMetadata],
         ['query'],
       ),
+    'getDepositsByPrincipal' : IDL.Func(
+        [IDL.Principal],
+        [IDL.Vec(FlexaDeposit)],
+        ['query'],
+      ),
+    'getDepositsByWallet' : IDL.Func(
+        [IDL.Text],
+        [IDL.Vec(FlexaDeposit)],
+        ['query'],
+      ),
     'getStripeSessionStatus' : IDL.Func([IDL.Text], [StripeSessionStatus], []),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
@@ -236,6 +332,11 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'initializeAccessControl' : IDL.Func([], [], []),
+    'initiateFlexaDeposit' : IDL.Func(
+        [IDL.Nat, IDL.Text],
+        [FlexaDepositIntent],
+        [],
+      ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'isStripeConfigured' : IDL.Func([], [IDL.Bool], ['query']),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
@@ -250,6 +351,7 @@ export const idlFactory = ({ IDL }) => {
         [TransformationOutput],
         ['query'],
       ),
+    'updateFlexaDepositStatus' : IDL.Func([IDL.Text, IDL.Text], [], []),
   });
 };
 

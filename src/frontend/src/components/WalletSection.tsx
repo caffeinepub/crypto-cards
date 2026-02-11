@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { TrendingUp, Trophy, Activity, Info, Wifi, Percent, ArrowDownToLine, ArrowUpFromLine, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { TrendingUp, Trophy, Activity, Info, Wifi, Percent, ArrowDownToLine, ArrowUpFromLine, AlertCircle, CheckCircle2, Network } from 'lucide-react';
 import type { GameMode } from '../App';
 import { useWeb3Wallet } from '../hooks/useWeb3Wallet';
-import { useGetCallerProfile, useGetTransactionHistory, useGetHouseCutPercent, useCheckBalance } from '../hooks/useQueries';
+import { useGetHouseCutPercent, useCheckBalance } from '../hooks/useQueries';
 import DepositWithdrawModal from './DepositWithdrawModal';
 
 interface PlayerStats {
@@ -37,9 +37,7 @@ export default function WalletSection({ gameMode }: WalletSectionProps) {
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
   const wallet = useWeb3Wallet();
   
-  // Online queries
-  const { data: onlineProfile } = useGetCallerProfile();
-  const { data: onlineTransactions } = useGetTransactionHistory();
+  // Online queries - these return placeholder data since backend methods aren't implemented
   const { data: houseCutPercent } = useGetHouseCutPercent();
   const { data: currentBalance } = useCheckBalance();
 
@@ -87,18 +85,6 @@ export default function WalletSection({ gameMode }: WalletSectionProps) {
     }
   };
 
-  // Helper function to get enum value as string
-  const getEnumValue = (enumObj: any): string => {
-    if (typeof enumObj === 'string') return enumObj;
-    if (typeof enumObj === 'object' && enumObj !== null) {
-      const keys = Object.keys(enumObj);
-      if (keys.length > 0) {
-        return keys[0].toLowerCase();
-      }
-    }
-    return 'unknown';
-  };
-
   // Determine which data to display
   const balance = gameMode === 'forReal' && currentBalance !== undefined
     ? (Number(currentBalance) / 1e18).toFixed(4)
@@ -106,33 +92,18 @@ export default function WalletSection({ gameMode }: WalletSectionProps) {
     ? (offlineStats.currentBalance / 1e18).toFixed(4) 
     : '10.0000';
 
-  const totalWinnings = gameMode === 'forReal' && onlineProfile
-    ? (Number(onlineProfile.totalWinnings) / 1e18).toFixed(4)
-    : offlineStats 
+  const totalWinnings = offlineStats 
     ? (offlineStats.totalWinnings / 1e18).toFixed(4) 
     : '0.0000';
 
-  const gamesPlayed = gameMode === 'forReal' && onlineProfile
-    ? Number(onlineProfile.playerStats.gamesPlayed)
-    : offlineStats?.gamesPlayed || 0;
-
-  const gamesWon = gameMode === 'forReal' && onlineProfile
-    ? Number(onlineProfile.playerStats.gamesWon)
-    : offlineStats?.gamesWon || 0;
+  const gamesPlayed = offlineStats?.gamesPlayed || 0;
+  const gamesWon = offlineStats?.gamesWon || 0;
 
   const winRate = gamesPlayed > 0 
     ? ((gamesWon / gamesPlayed) * 100).toFixed(1) 
     : '0.0';
 
-  const transactions = gameMode === 'forReal' && onlineTransactions
-    ? onlineTransactions.map(tx => ({
-        txId: tx.txId,
-        txType: getEnumValue(tx.txType) as 'deposit' | 'wager' | 'winnings' | 'withdrawal',
-        amount: Number(tx.amount),
-        timestamp: Number(tx.timestamp),
-        status: getEnumValue(tx.status) as 'pending' | 'completed' | 'failed',
-      }))
-    : offlineStats?.transactions || [];
+  const transactions = offlineStats?.transactions || [];
 
   const displayAddress = gameMode === 'forReal' && wallet.address
     ? wallet.address
@@ -140,33 +111,58 @@ export default function WalletSection({ gameMode }: WalletSectionProps) {
 
   const currentHouseCut = houseCutPercent ? Number(houseCutPercent) : 5;
 
-  // Determine if buttons should be enabled - wallet must be connected
+  // Determine if buttons should be enabled
   const isRealMode = gameMode === 'forReal';
-  const buttonsEnabled = isRealMode && wallet.isConnected;
+  const isWalletConnected = isRealMode && wallet.isConnected;
+  const isTransactionReady = isWalletConnected && wallet.isTransactionReady;
+  const isOnBaseNetwork = wallet.isOnBaseNetwork;
+
+  // Determine button states and messages
+  let depositDisabled = true;
+  let withdrawDisabled = true;
+  let depositMessage = '';
+  let withdrawMessage = '';
+
+  if (!isRealMode) {
+    depositDisabled = true;
+    withdrawDisabled = true;
+  } else if (!isWalletConnected) {
+    depositDisabled = true;
+    withdrawDisabled = true;
+    depositMessage = 'Connect your wallet to deposit funds';
+    withdrawMessage = 'Connect your wallet to withdraw funds';
+  } else if (!isTransactionReady) {
+    depositDisabled = true;
+    withdrawDisabled = true;
+    depositMessage = 'Open your wallet to complete connection';
+    withdrawMessage = 'Open your wallet to complete connection';
+  } else if (!isOnBaseNetwork) {
+    depositDisabled = true;
+    withdrawDisabled = true;
+    depositMessage = 'Switch to Base network to deposit';
+    withdrawMessage = 'Switch to Base network to withdraw';
+  } else {
+    depositDisabled = false;
+    withdrawDisabled = false;
+    depositMessage = '';
+    withdrawMessage = '';
+  }
 
   const handleDepositClick = () => {
-    if (buttonsEnabled) {
+    if (!depositDisabled) {
       setDepositModalOpen(true);
     }
   };
 
   const handleWithdrawClick = () => {
-    if (buttonsEnabled) {
+    if (!withdrawDisabled) {
       setWithdrawModalOpen(true);
     }
   };
 
-  // Determine tooltip message for disabled buttons
-  let depositTooltip = 'Deposit crypto to your in-game balance';
-  let withdrawTooltip = 'Withdraw crypto from your in-game balance';
-  
-  if (!wallet.isConnected) {
-    depositTooltip = '⚠️ Connect wallet to deposit funds';
-    withdrawTooltip = '⚠️ Connect wallet to withdraw funds';
-  } else {
-    depositTooltip = '✅ Wallet connected - Click to deposit';
-    withdrawTooltip = '✅ Wallet connected - Click to withdraw';
-  }
+  const handleSwitchToBase = async () => {
+    await wallet.switchToBase();
+  };
 
   // Get wallet balance for modal (if available)
   const walletBalance = wallet.balance || null;
@@ -220,53 +216,95 @@ export default function WalletSection({ gameMode }: WalletSectionProps) {
               </div>
               
               {gameMode === 'forReal' && (
-                <div className="flex gap-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex-1">
-                        <Button
-                          onClick={handleDepositClick}
-                          disabled={!buttonsEnabled}
-                          className="w-full gap-2 bg-green-600 hover:bg-green-700"
-                        >
-                          <ArrowDownToLine className="w-4 h-4" />
-                          Deposit
-                        </Button>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{depositTooltip}</p>
-                    </TooltipContent>
-                  </Tooltip>
+                <>
+                  <div className="flex gap-2">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex-1">
+                          <Button
+                            onClick={handleDepositClick}
+                            disabled={depositDisabled}
+                            className="w-full gap-2 bg-green-600 hover:bg-green-700"
+                          >
+                            <ArrowDownToLine className="w-4 h-4" />
+                            Deposit
+                          </Button>
+                        </div>
+                      </TooltipTrigger>
+                      {depositMessage && (
+                        <TooltipContent>
+                          <p>{depositMessage}</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
 
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex-1">
+                          <Button
+                            onClick={handleWithdrawClick}
+                            disabled={withdrawDisabled}
+                            variant="outline"
+                            className="w-full gap-2"
+                          >
+                            <ArrowUpFromLine className="w-4 h-4" />
+                            Withdraw
+                          </Button>
+                        </div>
+                      </TooltipTrigger>
+                      {withdrawMessage && (
+                        <TooltipContent>
+                          <p>{withdrawMessage}</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  </div>
+
+                  {/* Connection status alerts */}
+                  {!isWalletConnected && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        Connect your wallet to deposit or withdraw funds
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {isWalletConnected && !isTransactionReady && (
+                    <Alert>
+                      <Info className="h-4 w-4" />
+                      <AlertDescription>
+                        Open your wallet to complete the connection and enable transactions
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {isWalletConnected && isTransactionReady && !isOnBaseNetwork && (
+                    <Alert>
+                      <Network className="h-4 w-4" />
+                      <AlertDescription className="flex items-center justify-between">
+                        <span>Switch to Base network to deposit or withdraw</span>
                         <Button
-                          onClick={handleWithdrawClick}
-                          disabled={!buttonsEnabled}
+                          size="sm"
                           variant="outline"
-                          className="w-full gap-2"
+                          onClick={handleSwitchToBase}
+                          className="ml-2"
                         >
-                          <ArrowUpFromLine className="w-4 h-4" />
-                          Withdraw
+                          Switch to Base
                         </Button>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{withdrawTooltip}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              )}
+                      </AlertDescription>
+                    </Alert>
+                  )}
 
-              {gameMode === 'forReal' && !wallet.isConnected && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Connect your wallet to deposit or withdraw funds
-                  </AlertDescription>
-                </Alert>
+                  {isWalletConnected && isTransactionReady && isOnBaseNetwork && (
+                    <Alert className="border-green-500/50 bg-green-500/10">
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      <AlertDescription className="text-green-700 dark:text-green-400">
+                        Wallet ready for transactions on Base network
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </>
               )}
 
               <div className="pt-4 border-t space-y-2">

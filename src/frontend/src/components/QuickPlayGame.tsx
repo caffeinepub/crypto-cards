@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Trophy, AlertTriangle, Target } from 'lucide-react';
+import { ArrowLeft, Trophy } from 'lucide-react';
 import { GameMode } from '../App';
 import { useQuickPlaySession } from '../hooks/useQuickPlaySession';
 import { SpadesGameState } from '../games/spades/types';
@@ -9,8 +9,8 @@ import { OmahaGameState } from '../games/omaha/types';
 import { cardToString as spadesCardToString, getSuitColor as spadesSuitColor } from '../games/spades/types';
 import { cardToString as omahaCardToString, getSuitColor as omahaSuitColor } from '../games/omaha/types';
 import { canCheck, canCall } from '../games/omaha/engine';
-import { TARGET_SCORE } from '../games/spades/scoring';
 import OmahaCommunityBoard from '../games/omaha/OmahaCommunityBoard';
+import SpadesScoreboard from './spades/SpadesScoreboard';
 
 interface QuickPlayGameProps {
   gameType: 'spades' | 'omaha4Card';
@@ -20,7 +20,7 @@ interface QuickPlayGameProps {
 }
 
 export default function QuickPlayGame({ gameType, gameMode, onExit, playerName }: QuickPlayGameProps) {
-  const { session, isProcessing, startGame, submitBid, playCard, performOmahaAction, resetGame } = useQuickPlaySession();
+  const { session, isProcessing, startGame, submitBid, playCard, performOmahaAction, startOmahaNextHand, resetGame } = useQuickPlaySession();
 
   useEffect(() => {
     startGame(gameType, playerName);
@@ -43,7 +43,7 @@ export default function QuickPlayGame({ gameType, gameMode, onExit, playerName }
   if (gameType === 'spades') {
     return <SpadesGame state={session.state as SpadesGameState} onSubmitBid={submitBid} onPlayCard={playCard} onExit={handleExit} isProcessing={isProcessing} />;
   } else {
-    return <OmahaGame state={session.state as OmahaGameState} onAction={performOmahaAction} onExit={handleExit} isProcessing={isProcessing} />;
+    return <OmahaGame state={session.state as OmahaGameState} onAction={performOmahaAction} onNextHand={startOmahaNextHand} onExit={handleExit} isProcessing={isProcessing} />;
   }
 }
 
@@ -66,11 +66,6 @@ function SpadesGame({ state, onSubmitBid, onPlayCard, onExit, isProcessing }: {
     }
   }, [state.currentTrick.cards.length, state.completedTricks.length]);
 
-  // Count reneging penalties per player
-  const getPenaltyCount = (playerId: string) => {
-    return state.renegePenalties.filter(p => p.playerId === playerId).length;
-  };
-
   // Determine what to show: current trick, last trick, or empty state
   const hasCurrentTrick = state.currentTrick.cards.length > 0;
   const hasCompletedTricks = state.completedTricks.length > 0;
@@ -88,6 +83,14 @@ function SpadesGame({ state, onSubmitBid, onPlayCard, onExit, isProcessing }: {
             Exit Game
           </Button>
           <h2 className="text-xl font-bold gradient-text">Spades - Bidding Phase</h2>
+        </div>
+
+        {/* Sticky scoreboard on mobile, regular on desktop */}
+        <div className="md:hidden">
+          <SpadesScoreboard state={state} compact sticky />
+        </div>
+        <div className="hidden md:block">
+          <SpadesScoreboard state={state} />
         </div>
 
         <Card>
@@ -177,44 +180,13 @@ function SpadesGame({ state, onSubmitBid, onPlayCard, onExit, isProcessing }: {
         <h2 className="text-xl font-bold gradient-text">Spades - Hand {state.handNumber}</h2>
       </div>
 
-      {/* Scores */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Target className="h-5 w-5" />
-            Scores (Target: {TARGET_SCORE})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-2">
-            {state.players.map(p => {
-              const penaltyCount = getPenaltyCount(p.id);
-              return (
-                <div key={p.id} className="flex justify-between items-center p-2 bg-muted rounded">
-                  <div>
-                    <span className={`font-semibold ${p.id === 'player' ? 'text-primary' : ''}`}>
-                      {p.name}
-                    </span>
-                    {penaltyCount > 0 && (
-                      <span className="ml-2 text-xs text-destructive" title={`${penaltyCount} reneging penalties`}>
-                        <AlertTriangle className="inline h-3 w-3" /> {penaltyCount}
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <div className="font-bold">{p.totalScore}</div>
-                    {p.lastHandScore !== 0 && (
-                      <div className={`text-xs ${p.lastHandScore > 0 ? 'text-success' : 'text-destructive'}`}>
-                        {p.lastHandScore > 0 ? '+' : ''}{p.lastHandScore}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Sticky scoreboard on mobile, regular on desktop */}
+      <div className="md:hidden">
+        <SpadesScoreboard state={state} compact sticky />
+      </div>
+      <div className="hidden md:block">
+        <SpadesScoreboard state={state} />
+      </div>
 
       {/* Game Over */}
       {state.gameOver && state.winner && (
@@ -320,9 +292,10 @@ function SpadesGame({ state, onSubmitBid, onPlayCard, onExit, isProcessing }: {
   );
 }
 
-function OmahaGame({ state, onAction, onExit, isProcessing }: { 
+function OmahaGame({ state, onAction, onNextHand, onExit, isProcessing }: { 
   state: OmahaGameState; 
   onAction: (action: 'fold' | 'check' | 'call' | 'bet', amount?: number) => void; 
+  onNextHand: () => void;
   onExit: () => void;
   isProcessing: boolean;
 }) {
@@ -389,16 +362,26 @@ function OmahaGame({ state, onAction, onExit, isProcessing }: {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-primary">
               <Trophy className="h-6 w-6" />
-              Game Over!
+              Hand Complete!
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-lg">
-              <span className="font-bold">{state.players.find(p => p.id === state.winner)?.name}</span> wins!
-            </p>
-            {state.winningHand && (
-              <p className="text-sm text-muted-foreground mt-1">{state.winningHand}</p>
-            )}
+          <CardContent className="space-y-4">
+            <div>
+              <p className="text-lg">
+                <span className="font-bold">{state.players.find(p => p.id === state.winner)?.name}</span> wins!
+              </p>
+              {state.winningHand && (
+                <p className="text-sm text-muted-foreground mt-1">{state.winningHand}</p>
+              )}
+            </div>
+            <Button
+              onClick={onNextHand}
+              disabled={isProcessing}
+              className="w-full"
+              size="lg"
+            >
+              {isProcessing ? 'Starting...' : 'Next Hand'}
+            </Button>
           </CardContent>
         </Card>
       )}
@@ -406,7 +389,7 @@ function OmahaGame({ state, onAction, onExit, isProcessing }: {
       {/* Player Info */}
       <Card>
         <CardHeader>
-          <CardTitle>Your Hand {isPlayerTurn && <span className="text-primary ml-2">(Your Turn)</span>}</CardTitle>
+          <CardTitle>Your Hand {isPlayerTurn && !state.gameOver && <span className="text-primary ml-2">(Your Turn)</span>}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
@@ -468,33 +451,36 @@ function OmahaGame({ state, onAction, onExit, isProcessing }: {
                   )}
                 </div>
 
-                {/* Bet/Raise */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="range"
-                      min={minBet}
-                      max={maxBet}
-                      value={betAmount}
-                      onChange={(e) => setBetAmount(Number(e.target.value))}
-                      disabled={!canBet || isProcessing}
-                      className="flex-1"
-                    />
-                    <span className="text-sm font-bold w-16 text-right">{betAmount}</span>
+                {/* Bet/Raise controls */}
+                {canBet && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range"
+                        min={minBet}
+                        max={maxBet}
+                        value={betAmount}
+                        onChange={(e) => setBetAmount(Number(e.target.value))}
+                        className="flex-1"
+                        disabled={isProcessing}
+                      />
+                      <span className="text-sm font-bold w-16 text-right">{betAmount}</span>
+                    </div>
+                    <Button
+                      variant="default"
+                      onClick={() => onAction('bet', betAmount)}
+                      disabled={isProcessing}
+                      className="w-full"
+                      size="sm"
+                    >
+                      {state.currentBet > 0 ? `Raise to ${betAmount}` : `Bet ${betAmount}`}
+                    </Button>
                   </div>
-                  <Button
-                    variant="default"
-                    onClick={() => onAction('bet', betAmount)}
-                    disabled={!canBet || isProcessing}
-                    size="sm"
-                    className="w-full"
-                  >
-                    {state.currentBet > 0 ? 'Raise' : 'Bet'} to {betAmount}
-                  </Button>
-                  {!canBet && (
-                    <p className="text-xs text-muted-foreground">Not enough chips to bet</p>
-                  )}
-                </div>
+                )}
+
+                {!canBet && !playerCanCheck && !playerCanCall && (
+                  <p className="text-xs text-muted-foreground text-center">Not enough chips to bet or raise</p>
+                )}
               </div>
             )}
           </div>
@@ -510,11 +496,12 @@ function OmahaGame({ state, onAction, onExit, isProcessing }: {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {state.players.filter(p => p.id !== 'player').map(p => {
               const isCurrent = state.players[state.currentPlayerIndex].id === p.id;
+              const isFolded = p.folded;
               return (
-                <div key={p.id} className={`p-3 rounded-lg ${isCurrent ? 'bg-primary/10 border-2 border-primary' : 'bg-muted'} ${p.folded ? 'opacity-50' : ''}`}>
+                <div key={p.id} className={`p-3 rounded-lg ${isCurrent && !state.gameOver ? 'bg-primary/10 border-2 border-primary' : 'bg-muted'} ${isFolded ? 'opacity-50' : ''}`}>
                   <div className="font-semibold">
-                    {p.name} {isCurrent && !p.folded && '(Playing...)'}
-                    {p.folded && '(Folded)'}
+                    {p.name} {isCurrent && !state.gameOver && '(Playing...)'}
+                    {isFolded && ' (Folded)'}
                   </div>
                   <div className="text-xs text-muted-foreground">
                     Chips: {p.chips} | Bet: {p.currentBet}

@@ -13,7 +13,6 @@ import TournamentSection from './components/TournamentSection';
 import WalletSection from './components/WalletSection';
 import AdminSettings from './components/AdminSettings';
 import QuickPlayGame from './components/QuickPlayGame';
-import WalletConnectModal from './components/WalletConnectModal';
 import WalletInstallModal from './components/WalletInstallModal';
 import { Web3WalletProvider, useWeb3WalletContext } from './contexts/Web3WalletContext';
 
@@ -31,7 +30,6 @@ const queryClient = new QueryClient({
 function AppContent() {
   const { identity, isInitializing } = useInternetIdentity();
   const { actor } = useActor();
-  const wallet = useWeb3WalletContext();
   const [isAdmin, setIsAdmin] = useState(false);
   const [checkingAdmin, setCheckingAdmin] = useState(true);
   const [mode, setMode] = useState<GameMode>('forFun');
@@ -77,7 +75,7 @@ function AppContent() {
 
   if (isInitializing || checkingAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5">
+      <div className="min-h-screen flex items-center justify-center colorful-bg-gradient">
         <div className="text-center space-y-4">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-muted-foreground">Loading...</p>
@@ -87,8 +85,8 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-background to-primary/5">
-      <Header mode={mode} onModeChange={setMode} />
+    <div className="min-h-screen flex flex-col colorful-bg-gradient">
+      <Header gameMode={mode} onGameModeChange={setMode} />
 
       <main className="flex-1 container mx-auto px-4 py-8">
         {activeGame ? (
@@ -135,11 +133,6 @@ function AppContent() {
       <Footer />
 
       <ProfileSetupModal gameMode={mode} />
-      
-      <WalletConnectModal
-        open={wallet.showWalletConnectModal}
-        onOpenChange={(open) => wallet.setShowWalletConnectModal(open)}
-      />
       
       <WalletInstallModal />
 

@@ -2,13 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-ensure-the-walletconnect-connection-path-triggers-visible-ui-feedback-by-rendering-a-walletconnect-modal-whenever-useweb3wallet-showwalletconnectmodal-is-set-to-true-and-allow-the-modal-to-be-closed-which-must-set-showwalletconnectmodal-back-to-false",
-      "featureTitle": "Ensure the WalletConnect connection path triggers visible UI feedback by rendering a WalletConnect modal whenever `useWeb3Wallet().showWalletConnectModal` is set to true, and allow the modal to be closed (which must set `showWalletConnectModal` back to false).",
+      "featureId": "feature-update-the-global-page-background-styling-to-be-more-colorful-by-replacing-the-current-subtle-background-gradient-used-on-the-main-app-container-and-loading-screen-with-a-richer-multi-stop-gradient-that-incorporates-existing-theme-colors-e-g-primary-secondary-accent-while-maintaining-readable-contrast-for-all-foreground-text-in-both-light-and-dark-modes",
+      "featureTitle": "Update the global page background styling to be more colorful by replacing the current subtle background gradient (used on the main app container and loading screen) with a richer multi-stop gradient that incorporates existing theme colors (e.g., primary/secondary/accent) while maintaining readable contrast for all foreground text in both light and dark modes.",
       "files": [
         "frontend/src/App.tsx",
-        "frontend/src/components/Header.tsx",
-        "frontend/src/contexts/Web3WalletContext.tsx",
-        "frontend/src/hooks/useWeb3Wallet.ts"
+        "frontend/src/index.css"
       ],
       "components": [
         "authorization@3.0.0",
@@ -25,58 +23,6 @@
       ],
       "testIds": [
         "REQ-1"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-ensure-users-see-a-clear-install-prompt-when-no-injected-wallet-provider-is-detected-by-mounting-walletinstallmodal-at-the-app-level-so-that-wallet-walletnotdetected-results-in-a-visible-modal-instead-of-only-setting-state",
-      "featureTitle": "Ensure users see a clear install prompt when no injected wallet provider is detected by mounting `WalletInstallModal` at the app level so that `wallet.walletNotDetected` results in a visible modal instead of only setting state.",
-      "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/components/WalletInstallModal.tsx",
-        "frontend/src/hooks/useWeb3Wallet.ts"
-      ],
-      "components": [
-        "authorization@3.0.0",
-        "http-outcalls@3.0.0",
-        "stripe@3.0.0",
-        "blob-storage@4.0.0",
-        "qr-code@1.0.0",
-        "camera@1.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-2"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-add-user-facing-error-and-progress-feedback-for-wallet-connections-when-wallet-connect-fails-or-a-request-is-pending-rejected-show-an-english-toast-and-or-inline-message-and-reflect-wallet-isconnecting-by-disabling-relevant-connect-ui-elements-and-indicating-connection-is-in-progress",
-      "featureTitle": "Add user-facing error and progress feedback for wallet connections: when `wallet.connect(...)` fails or a request is pending/rejected, show an English toast and/or inline message and reflect `wallet.isConnecting` by disabling relevant connect UI elements and indicating connection is in progress.",
-      "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/components/Header.tsx",
-        "frontend/src/hooks/useWeb3Wallet.ts"
-      ],
-      "components": [
-        "authorization@3.0.0",
-        "http-outcalls@3.0.0",
-        "stripe@3.0.0",
-        "blob-storage@4.0.0",
-        "qr-code@1.0.0",
-        "camera@1.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-3"
       ],
       "confidence": "high"
     }

@@ -1,11 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Make the Connect Wallet flow responsive and user-friendly by showing the WalletConnect modal, showing an install prompt when no injected wallet exists, and providing clear progress/error feedback during connection attempts.
+**Goal:** Make the app’s global background noticeably more colorful while preserving readable contrast in both light and dark modes.
 
 **Planned changes:**
-- Render a closable WalletConnect modal whenever `useWeb3Wallet().showWalletConnectModal` is true, and ensure closing it sets the flag back to false.
-- Mount `WalletInstallModal` at the app level so `wallet.walletNotDetected` reliably shows an “Install a Wallet” modal, and clear the prompt state when dismissed.
-- Add user-facing progress/error feedback for wallet connections: disable connect actions while `wallet.isConnecting`, and show English messages for rejection, failures, or pending requests.
+- Replace the current subtle global background gradient (used by the main app container and loading screen) with a richer multi-stop gradient derived from existing theme colors (primary/secondary/accent).
+- Ensure foreground text and UI elements maintain strong contrast across the full gradient in both `:root` (light) and `.dark` (dark) modes.
+- Apply the updated background consistently to the main app shell and loading screen without any backend changes.
 
-**User-visible outcome:** Tapping “Connect Wallet” visibly opens the appropriate modal (WalletConnect or Install Wallet), users can close modals without getting stuck, and connection attempts show clear in-app progress/error messages instead of requiring the dev console.
+**User-visible outcome:** The loading screen and main app background look more vibrant and colorful, while all text and UI remain clearly legible in both light and dark modes.

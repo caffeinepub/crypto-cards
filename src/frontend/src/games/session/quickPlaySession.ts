@@ -1,7 +1,7 @@
 import { initializeGame as initSpades, playCard as playSpadesCard, submitBid as submitSpadesBid } from '../spades/engine';
 import { SpadesGameState } from '../spades/types';
 import { chooseBotCard, chooseBotBid } from '../spades/bots';
-import { initializeGame as initOmaha, performAction as performOmahaAction } from '../omaha/engine';
+import { initializeGame as initOmaha, performAction as performOmahaAction, startNextHand as startOmahaNextHand } from '../omaha/engine';
 import { OmahaGameState } from '../omaha/types';
 import { chooseBotAction } from '../omaha/bots';
 import { Card as SpadesCard } from '../spades/types';
@@ -36,6 +36,7 @@ export function executeAction(
     | { type: 'playCard'; card: SpadesCard } 
     | { type: 'submitBid'; bid: number }
     | { type: 'omahaAction'; action: 'fold' | 'check' | 'call' | 'bet'; amount?: number }
+    | { type: 'omahaNextHand' }
 ): QuickPlaySession {
   try {
     if (session.gameType === 'spades' && action.type === 'submitBid') {
@@ -49,6 +50,10 @@ export function executeAction(
     } else if (session.gameType === 'omaha4Card' && action.type === 'omahaAction') {
       const state = session.state as OmahaGameState;
       const newState = performOmahaAction(state, 'player', action.action, action.amount);
+      return { ...session, state: newState };
+    } else if (session.gameType === 'omaha4Card' && action.type === 'omahaNextHand') {
+      const state = session.state as OmahaGameState;
+      const newState = startOmahaNextHand(state, Date.now());
       return { ...session, state: newState };
     }
     

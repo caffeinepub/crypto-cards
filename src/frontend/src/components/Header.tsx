@@ -1,294 +1,205 @@
-import { Badge } from '@/components/ui/badge';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Spade, LogOut, ArrowDownToLine, ArrowUpFromLine, CheckCircle2, Loader2 } from 'lucide-react';
-import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useWeb3WalletContext } from '../contexts/Web3WalletContext';
-import { useQueryClient } from '@tanstack/react-query';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { useState, useEffect } from 'react';
+import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Wallet, ChevronDown, LogOut, ArrowDownToLine, ArrowUpFromLine, Loader2 } from 'lucide-react';
+import { useWeb3Wallet } from '../hooks/useWeb3Wallet';
+import WalletInstallModal from './WalletInstallModal';
+import WalletConnectModal from './WalletConnectModal';
+import WalletPickerModal from './WalletPickerModal';
 import DepositWithdrawModal from './DepositWithdrawModal';
-import BackendConnectivityIndicator from './BackendConnectivityIndicator';
-import { toast } from 'sonner';
 import type { GameMode } from '../App';
 
 interface HeaderProps {
-  mode: GameMode;
-  onModeChange: (mode: GameMode) => void;
+  gameMode: GameMode;
+  onGameModeChange: (mode: GameMode) => void;
 }
 
-export default function Header({ mode, onModeChange }: HeaderProps) {
-  const { login, clear, loginStatus, identity } = useInternetIdentity();
-  const wallet = useWeb3WalletContext();
-  const queryClient = useQueryClient();
-  const [showDepositModal, setShowDepositModal] = useState(false);
-  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+export default function Header({ gameMode, onGameModeChange }: HeaderProps) {
+  const wallet = useWeb3Wallet();
+  const [depositModalOpen, setDepositModalOpen] = useState(false);
+  const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
+  const [walletPickerOpen, setWalletPickerOpen] = useState(false);
 
-  const isAuthenticated = !!identity;
-  const isLoggingIn = loginStatus === 'logging-in';
-
-  useEffect(() => {
-    if (isAuthenticated && mode === 'forReal') {
-      wallet.autoConnect();
-    }
-  }, [isAuthenticated, mode]);
-
-  // Show error toasts when wallet errors occur
-  useEffect(() => {
-    if (wallet.error) {
-      toast.error(wallet.error);
-    }
-  }, [wallet.error]);
-
-  const handleAuth = async () => {
-    if (isAuthenticated) {
-      await clear();
-      queryClient.clear();
-      wallet.disconnect();
-    } else {
-      try {
-        await login();
-      } catch (error: any) {
-        console.error('Login error:', error);
-        if (error.message === 'User is already authenticated') {
-          await clear();
-          setTimeout(() => login(), 300);
-        }
-      }
-    }
+  const handleConnectClick = () => {
+    wallet.clearError();
+    setWalletPickerOpen(true);
   };
 
-  const handleModeToggle = (newMode: GameMode) => {
-    onModeChange(newMode);
-    if (newMode === 'forFun') {
-      wallet.disconnect();
-    } else if (isAuthenticated) {
-      wallet.autoConnect();
-    }
-  };
-
-  const handleWalletConnect = async (walletType: 'coinbase' | 'metamask' | 'walletconnect' | 'guest') => {
-    try {
-      await wallet.connect(walletType);
-    } catch (error) {
-      console.error('Wallet connection error:', error);
-    }
-  };
-
-  const handleWalletDisconnect = () => {
+  const handleDisconnect = () => {
     wallet.disconnect();
   };
 
-  const shortenAddress = (addr: string) => {
+  const formatAddress = (addr: string) => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
-  const getWalletLabel = () => {
-    if (wallet.selectedWallet === 'coinbase') return 'Coinbase Wallet';
-    if (wallet.selectedWallet === 'metamask') return 'MetaMask';
-    if (wallet.selectedWallet === 'walletconnect') return 'WalletConnect';
-    if (wallet.selectedWallet === 'guest') return 'Guest Wallet';
-    return 'Unknown Wallet';
-  };
+  const gameModeLabel = gameMode === 'forFun' ? 'For Fun' : 'For Real';
 
   return (
-    <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+    <>
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-16 items-center justify-between">
+          <div className="flex items-center gap-3 md:gap-6">
             <div className="flex items-center gap-2">
-              <Spade className="w-8 h-8 text-primary" />
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                Card Games
+              <img 
+                src="/assets/generated/wallet-icon-transparent.dim_64x64.png" 
+                alt="Logo" 
+                className="w-8 h-8"
+              />
+              <h1 className="text-lg md:text-xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+                Crypto Cards
               </h1>
             </div>
-            <BackendConnectivityIndicator />
-          </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 bg-muted/50 rounded-full p-1">
+            {/* Mobile game mode dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="md:hidden gap-1.5 text-xs"
+                >
+                  {gameModeLabel}
+                  <ChevronDown className="w-3 h-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem
+                  onClick={() => onGameModeChange('forFun')}
+                  className={gameMode === 'forFun' ? 'bg-accent' : ''}
+                >
+                  For Fun
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => onGameModeChange('forReal')}
+                  className={gameMode === 'forReal' ? 'bg-accent' : ''}
+                >
+                  For Real
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Desktop game mode toggle */}
+            <div className="hidden md:flex items-center gap-2 bg-muted rounded-full p-1">
               <Button
-                variant={mode === 'forFun' ? 'default' : 'ghost'}
+                variant={gameMode === 'forFun' ? 'default' : 'ghost'}
                 size="sm"
-                onClick={() => handleModeToggle('forFun')}
+                onClick={() => onGameModeChange('forFun')}
                 className="rounded-full"
               >
                 For Fun
               </Button>
               <Button
-                variant={mode === 'forReal' ? 'default' : 'ghost'}
+                variant={gameMode === 'forReal' ? 'default' : 'ghost'}
                 size="sm"
-                onClick={() => handleModeToggle('forReal')}
+                onClick={() => onGameModeChange('forReal')}
                 className="rounded-full"
               >
                 For Real
               </Button>
             </div>
+          </div>
 
-            {mode === 'forReal' && isAuthenticated && (
+          <div className="flex items-center gap-2 md:gap-3">
+            {gameMode === 'forReal' && (
               <>
-                {wallet.isConnected ? (
-                  <div className="flex items-center gap-2">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Badge variant="outline" className="gap-2 px-3 py-1.5 cursor-pointer">
-                            <CheckCircle2 className="w-4 h-4 text-green-500" />
-                            <span className="font-mono text-sm">
-                              {shortenAddress(wallet.address || '')}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {getWalletLabel()}
-                            </span>
-                          </Badge>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="font-mono">{wallet.address}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Balance: {wallet.balance} ETH
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowDepositModal(true)}
-                      className="gap-2"
-                    >
-                      <ArrowDownToLine className="w-4 h-4" />
-                      Deposit
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowWithdrawModal(true)}
-                      className="gap-2"
-                    >
-                      <ArrowUpFromLine className="w-4 h-4" />
-                      Withdraw
-                    </Button>
-
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleWalletDisconnect}
-                      disabled={wallet.isConnecting}
-                    >
-                      Disconnect
-                    </Button>
-                  </div>
+                {!wallet.isConnected ? (
+                  <Button
+                    onClick={handleConnectClick}
+                    disabled={wallet.isConnecting}
+                    size="sm"
+                    className="gap-1.5 md:gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-xs md:text-sm"
+                  >
+                    {wallet.isConnecting ? (
+                      <>
+                        <Loader2 className="w-3 h-3 md:w-4 md:h-4 animate-spin" />
+                        <span className="hidden sm:inline">Connecting...</span>
+                        <span className="sm:hidden">...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Wallet className="w-3 h-3 md:w-4 md:h-4" />
+                        <span className="hidden sm:inline">Connect Wallet</span>
+                        <span className="sm:hidden">Connect</span>
+                      </>
+                    )}
+                  </Button>
                 ) : (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button 
-                        variant="default" 
-                        size="sm"
-                        disabled={wallet.isConnecting}
-                      >
-                        {wallet.isConnecting ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Connecting...
-                          </>
-                        ) : (
-                          'Connect Wallet'
+                      <Button variant="outline" size="sm" className="gap-1.5 md:gap-2 text-xs md:text-sm">
+                        <Wallet className="w-3 h-3 md:w-4 md:h-4" />
+                        <span className="hidden sm:inline">
+                          {formatAddress(wallet.address || '')}
+                        </span>
+                        {wallet.balance && (
+                          <Badge variant="secondary" className="ml-0.5 md:ml-1 text-xs">
+                            {wallet.balance} ETH
+                          </Badge>
                         )}
+                        <ChevronDown className="w-3 h-3 md:w-4 md:h-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuLabel>Choose Wallet</DropdownMenuLabel>
+                      <div className="px-2 py-1.5">
+                        <p className="text-xs text-muted-foreground">Connected with</p>
+                        <p className="text-sm font-medium capitalize">{wallet.selectedWallet}</p>
+                      </div>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => handleWalletConnect('coinbase')}
-                        disabled={wallet.isConnecting}
-                        className="cursor-pointer"
-                      >
-                        <img
-                          src="/assets/generated/coinbase-wallet-logo-transparent.dim_64x64.png"
-                          alt="Coinbase"
-                          className="w-5 h-5 mr-2"
-                        />
-                        Coinbase Wallet
+                      <DropdownMenuItem onClick={() => setDepositModalOpen(true)}>
+                        <ArrowDownToLine className="w-4 h-4 mr-2" />
+                        Deposit
                       </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleWalletConnect('metamask')}
-                        disabled={wallet.isConnecting}
-                        className="cursor-pointer"
-                      >
-                        <img
-                          src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg"
-                          alt="MetaMask"
-                          className="w-5 h-5 mr-2"
-                        />
-                        MetaMask
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleWalletConnect('walletconnect')}
-                        disabled={wallet.isConnecting}
-                        className="cursor-pointer"
-                      >
-                        <img
-                          src="/assets/generated/walletconnect-logo-transparent.dim_64x64.png"
-                          alt="WalletConnect"
-                          className="w-5 h-5 mr-2"
-                        />
-                        WalletConnect
+                      <DropdownMenuItem onClick={() => setWithdrawModalOpen(true)}>
+                        <ArrowUpFromLine className="w-4 h-4 mr-2" />
+                        Withdraw
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => handleWalletConnect('guest')}
-                        disabled={wallet.isConnecting}
-                        className="cursor-pointer"
-                      >
-                        Guest Wallet (Demo)
+                      <DropdownMenuItem onClick={handleDisconnect}>
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Disconnect
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
               </>
             )}
-
-            <Button
-              onClick={handleAuth}
-              disabled={isLoggingIn}
-              variant={isAuthenticated ? 'outline' : 'default'}
-              size="sm"
-              className="gap-2"
-            >
-              {isLoggingIn ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Logging in...
-                </>
-              ) : isAuthenticated ? (
-                <>
-                  <LogOut className="w-4 h-4" />
-                  Logout
-                </>
-              ) : (
-                'Login'
-              )}
-            </Button>
           </div>
         </div>
-      </div>
+      </header>
+
+      <WalletPickerModal 
+        open={walletPickerOpen} 
+        onOpenChange={setWalletPickerOpen} 
+      />
+
+      <WalletConnectModal
+        open={wallet.showWalletConnectModal}
+        onOpenChange={wallet.setShowWalletConnectModal}
+      />
+
+      <WalletInstallModal />
 
       <DepositWithdrawModal
-        open={showDepositModal}
-        onOpenChange={setShowDepositModal}
+        open={depositModalOpen}
+        onOpenChange={setDepositModalOpen}
         mode="deposit"
         walletBalance={wallet.balance}
       />
 
       <DepositWithdrawModal
-        open={showWithdrawModal}
-        onOpenChange={setShowWithdrawModal}
+        open={withdrawModalOpen}
+        onOpenChange={setWithdrawModalOpen}
         mode="withdraw"
         walletBalance={wallet.balance}
       />
-    </header>
+    </>
   );
 }

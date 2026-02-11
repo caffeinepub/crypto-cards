@@ -1,85 +1,38 @@
 {
   "kind": "build_request",
-  "title": "Fix unresponsive Connect Wallet flow (WalletConnect modal, install prompt, and error feedback)",
-  "priority": "high",
+  "title": "Make the app background more colorful",
+  "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Ensure the WalletConnect connection path triggers visible UI feedback by rendering a WalletConnect modal whenever `useWeb3Wallet().showWalletConnectModal` is set to true, and allow the modal to be closed (which must set `showWalletConnectModal` back to false).",
+      "text": "Update the global page background styling to be more colorful by replacing the current subtle background gradient (used on the main app container and loading screen) with a richer multi-stop gradient that incorporates existing theme colors (e.g., primary/secondary/accent) while maintaining readable contrast for all foreground text in both light and dark modes.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-3"
         ],
         "quotes": [
-          "Nothing happens when I press connect wallet"
+          "Just make the background color more colorful"
         ]
       },
       "acceptanceCriteria": [
-        "In Real mode, selecting “WalletConnect” from the Connect Wallet menu opens a modal on top of the app (not just a console log).",
-        "Closing the modal (Cancel button or dialog close) hides it and does not leave the UI in a stuck loading state.",
-        "No React console errors about missing providers/components when opening the modal."
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "text": "Ensure users see a clear install prompt when no injected wallet provider is detected by mounting `WalletInstallModal` at the app level so that `wallet.walletNotDetected` results in a visible modal instead of only setting state.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "Nothing happens when I press connect wallet"
-        ]
-      },
-      "acceptanceCriteria": [
-        "On a browser without `window.ethereum`, selecting “Coinbase Wallet” or “MetaMask” from the Connect Wallet menu opens an “Install a Wallet” modal.",
-        "Dismissing the install modal clears the install prompt state so it does not immediately re-open.",
-        "The rest of the app remains usable after closing the install modal."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Add user-facing error and progress feedback for wallet connections: when `wallet.connect(...)` fails or a request is pending/rejected, show an English toast and/or inline message and reflect `wallet.isConnecting` by disabling relevant connect UI elements and indicating connection is in progress.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "Nothing happens when I press connect wallet"
-        ]
-      },
-      "acceptanceCriteria": [
-        "If the user rejects the wallet request, the UI shows an English error message (e.g., via toast) without requiring opening the dev console.",
-        "If a connection request is already pending, the UI informs the user to check their wallet app/extension.",
-        "While connecting, the Connect Wallet menu items/buttons are disabled or otherwise clearly indicate a connection attempt is in progress.",
-        "Successful connect results in the header showing the shortened address and the connected wallet label (as currently designed)."
+        "On both the loading screen and the main app shell, the background appears noticeably more colorful than the current gradient.",
+        "Text and UI elements remain clearly legible (no low-contrast sections) in both light mode (:root) and dark mode (.dark).",
+        "No backend changes are made.",
+        "The change is implemented without editing any files listed under frontend immutablePaths."
       ]
     }
   ],
   "constraints": [
-    "Do not modify any files under `frontend/src/components/ui` (compose them only).",
-    "Do not edit any files listed in `frontend.immutablePaths` in SYSTEM_CONTEXT.",
-    "Backend remains single-actor; no backend changes are required for this wallet-connect UI fix."
+    "Frontend immutablePaths must not be edited (frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui).",
+    "Backend must remain single-actor; no backend changes are required for this request."
   ],
   "nonGoals": [
-    "Implementing the real WalletConnect SDK / generating real WalletConnect URIs.",
-    "Adding third-party authentication providers or external wallet/payment integrations beyond the current in-app UI flow."
+    "Adding new features unrelated to background styling (e.g., gameplay changes, wallet logic changes).",
+    "Introducing third-party theming libraries or changing the authentication flow."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }

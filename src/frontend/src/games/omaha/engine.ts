@@ -62,6 +62,48 @@ export function initializeGame(playerName: string, seed: number = Date.now()): O
   };
 }
 
+export function startNextHand(state: OmahaGameState, seed: number = Date.now()): OmahaGameState {
+  const deck = shuffleDeck(createDeck(), seed);
+  
+  // Preserve player info (id, name, isBot, chips) but reset hand-specific state
+  const players: Player[] = state.players.map(p => ({
+    id: p.id,
+    name: p.name,
+    isBot: p.isBot,
+    chips: p.chips, // Preserve chip stacks
+    holeCards: [],
+    currentBet: 0,
+    folded: false,
+    hasActedThisStreet: false,
+  }));
+  
+  let cardIndex = 0;
+  
+  // Deal 4 hole cards to each player
+  for (let i = 0; i < 4; i++) {
+    for (const player of players) {
+      player.holeCards.push(deck[cardIndex++]);
+    }
+  }
+  
+  // Rotate dealer
+  const newDealerIndex = (state.dealerIndex + 1) % players.length;
+  
+  return {
+    players,
+    currentPlayerIndex: (newDealerIndex + 1) % players.length, // Start after dealer
+    dealerIndex: newDealerIndex,
+    street: 'preflop',
+    communityCards: deck.slice(cardIndex, cardIndex + 5), // Pre-deal community cards
+    pot: 0,
+    currentBet: 0,
+    gameOver: false,
+    winner: null,
+    winningHand: null,
+    lastRaiserIndex: undefined,
+  };
+}
+
 export function canCheck(state: OmahaGameState, playerId: string): boolean {
   const player = state.players.find(p => p.id === playerId);
   if (!player || player.folded) return false;

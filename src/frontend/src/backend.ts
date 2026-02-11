@@ -94,6 +94,14 @@ export interface TransformationOutput {
     body: Uint8Array;
     headers: Array<http_header>;
 }
+export interface FlexaDeposit {
+    status: Variant_pending_confirmed_failed;
+    depositId: string;
+    createdAt: bigint;
+    walletAddress?: WalletAddress;
+    amount: bigint;
+    playerPrincipal?: Principal;
+}
 export interface CanisterBuildMetadata {
     dfxVersion: string;
     commitHash: string;
@@ -122,6 +130,13 @@ export interface ShoppingItem {
     quantity: bigint;
     priceInCents: bigint;
     productDescription: string;
+}
+export interface FlexaDepositIntent {
+    depositId: string;
+    principal: Principal;
+    createdAt: bigint;
+    walletAddress: string;
+    amount: bigint;
 }
 export interface TransformationInput {
     context: Uint8Array;
@@ -156,6 +171,11 @@ export enum UserRole {
     user = "user",
     guest = "guest"
 }
+export enum Variant_pending_confirmed_failed {
+    pending = "pending",
+    confirmed = "confirmed",
+    failed = "failed"
+}
 export interface backendInterface {
     _caffeineStorageBlobIsLive(hash: Uint8Array): Promise<boolean>;
     _caffeineStorageBlobsToDelete(): Promise<Array<Uint8Array>>;
@@ -163,14 +183,24 @@ export interface backendInterface {
     _caffeineStorageCreateCertificate(blobHash: string): Promise<_CaffeineStorageCreateCertificateResult>;
     _caffeineStorageRefillCashier(refillInformation: _CaffeineStorageRefillInformation | null): Promise<_CaffeineStorageRefillResult>;
     _caffeineStorageUpdateGatewayPrincipals(): Promise<void>;
+    adminCreateDeposit(depositId: string, amount: bigint, playerPrincipal: Principal, walletAddress: string): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    batchCreateDeposits(deposits: Array<[string, bigint, Principal, string]>): Promise<void>;
+    batchUpdateDepositStatus(updates: Array<[string, string]>): Promise<void>;
+    cancelDeposit(depositId: string): Promise<void>;
     createCheckoutSession(items: Array<ShoppingItem>, successUrl: string, cancelUrl: string): Promise<string>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getCanisterBuildMetadata(): Promise<CanisterBuildMetadata>;
+    getDepositsByPrincipal(principal: Principal): Promise<Array<FlexaDeposit>>;
+    getDepositsByWallet(walletAddress: string): Promise<Array<FlexaDeposit>>;
     getStripeSessionStatus(sessionId: string): Promise<StripeSessionStatus>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     initializeAccessControl(): Promise<void>;
+    /**
+     * / Flexa deposit intent endpoint
+     */
+    initiateFlexaDeposit(amount: bigint, walletAddress: string): Promise<FlexaDepositIntent>;
     isCallerAdmin(): Promise<boolean>;
     isStripeConfigured(): Promise<boolean>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
@@ -180,8 +210,12 @@ export interface backendInterface {
     setCanisterBuildMetadata(commitHash: string, buildTime: bigint, dfxVersion: string): Promise<void>;
     setStripeConfiguration(config: StripeConfiguration): Promise<void>;
     transform(input: TransformationInput): Promise<TransformationOutput>;
+    /**
+     * / Flexa deposit callback (simulated webhook)
+     */
+    updateFlexaDepositStatus(depositId: string, status: string): Promise<void>;
 }
-import type { StripeSessionStatus as _StripeSessionStatus, UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
+import type { FlexaDeposit as _FlexaDeposit, StripeSessionStatus as _StripeSessionStatus, UserProfile as _UserProfile, UserRole as _UserRole, WalletAddress as _WalletAddress, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _caffeineStorageBlobIsLive(arg0: Uint8Array): Promise<boolean> {
@@ -268,6 +302,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async adminCreateDeposit(arg0: string, arg1: bigint, arg2: Principal, arg3: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.adminCreateDeposit(arg0, arg1, arg2, arg3);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.adminCreateDeposit(arg0, arg1, arg2, arg3);
+            return result;
+        }
+    }
     async assignCallerUserRole(arg0: Principal, arg1: UserRole): Promise<void> {
         if (this.processError) {
             try {
@@ -279,6 +327,48 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n8(this._uploadFile, this._downloadFile, arg1));
+            return result;
+        }
+    }
+    async batchCreateDeposits(arg0: Array<[string, bigint, Principal, string]>): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.batchCreateDeposits(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.batchCreateDeposits(arg0);
+            return result;
+        }
+    }
+    async batchUpdateDepositStatus(arg0: Array<[string, string]>): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.batchUpdateDepositStatus(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.batchUpdateDepositStatus(arg0);
+            return result;
+        }
+    }
+    async cancelDeposit(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.cancelDeposit(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.cancelDeposit(arg0);
             return result;
         }
     }
@@ -338,18 +428,46 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async getDepositsByPrincipal(arg0: Principal): Promise<Array<FlexaDeposit>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getDepositsByPrincipal(arg0);
+                return from_candid_vec_n13(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getDepositsByPrincipal(arg0);
+            return from_candid_vec_n13(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getDepositsByWallet(arg0: string): Promise<Array<FlexaDeposit>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getDepositsByWallet(arg0);
+                return from_candid_vec_n13(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getDepositsByWallet(arg0);
+            return from_candid_vec_n13(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async getStripeSessionStatus(arg0: string): Promise<StripeSessionStatus> {
         if (this.processError) {
             try {
                 const result = await this.actor.getStripeSessionStatus(arg0);
-                return from_candid_StripeSessionStatus_n13(this._uploadFile, this._downloadFile, result);
+                return from_candid_StripeSessionStatus_n19(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getStripeSessionStatus(arg0);
-            return from_candid_StripeSessionStatus_n13(this._uploadFile, this._downloadFile, result);
+            return from_candid_StripeSessionStatus_n19(this._uploadFile, this._downloadFile, result);
         }
     }
     async getUserProfile(arg0: Principal): Promise<UserProfile | null> {
@@ -377,6 +495,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.initializeAccessControl();
+            return result;
+        }
+    }
+    async initiateFlexaDeposit(arg0: bigint, arg1: string): Promise<FlexaDepositIntent> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.initiateFlexaDeposit(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.initiateFlexaDeposit(arg0, arg1);
             return result;
         }
     }
@@ -464,9 +596,26 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async updateFlexaDepositStatus(arg0: string, arg1: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateFlexaDepositStatus(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateFlexaDepositStatus(arg0, arg1);
+            return result;
+        }
+    }
 }
-function from_candid_StripeSessionStatus_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _StripeSessionStatus): StripeSessionStatus {
-    return from_candid_variant_n14(_uploadFile, _downloadFile, value);
+function from_candid_FlexaDeposit_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _FlexaDeposit): FlexaDeposit {
+    return from_candid_record_n15(_uploadFile, _downloadFile, value);
+}
+function from_candid_StripeSessionStatus_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _StripeSessionStatus): StripeSessionStatus {
+    return from_candid_variant_n20(_uploadFile, _downloadFile, value);
 }
 function from_candid_UserRole_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
     return from_candid_variant_n12(_uploadFile, _downloadFile, value);
@@ -477,7 +626,13 @@ function from_candid__CaffeineStorageRefillResult_n4(_uploadFile: (file: Externa
 function from_candid_opt_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n16(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [string]): string | null {
+function from_candid_opt_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_WalletAddress]): WalletAddress | null {
+    return value.length === 0 ? null : value[0];
+}
+function from_candid_opt_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [Principal]): Principal | null {
+    return value.length === 0 ? null : value[0];
+}
+function from_candid_opt_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [string]): string | null {
     return value.length === 0 ? null : value[0];
 }
 function from_candid_opt_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [boolean]): boolean | null {
@@ -487,6 +642,36 @@ function from_candid_opt_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Ar
     return value.length === 0 ? null : value[0];
 }
 function from_candid_record_n15(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    status: {
+        pending: null;
+    } | {
+        confirmed: null;
+    } | {
+        failed: null;
+    };
+    depositId: string;
+    createdAt: bigint;
+    walletAddress: [] | [_WalletAddress];
+    amount: bigint;
+    playerPrincipal: [] | [Principal];
+}): {
+    status: Variant_pending_confirmed_failed;
+    depositId: string;
+    createdAt: bigint;
+    walletAddress?: WalletAddress;
+    amount: bigint;
+    playerPrincipal?: Principal;
+} {
+    return {
+        status: from_candid_variant_n16(_uploadFile, _downloadFile, value.status),
+        depositId: value.depositId,
+        createdAt: value.createdAt,
+        walletAddress: record_opt_to_undefined(from_candid_opt_n17(_uploadFile, _downloadFile, value.walletAddress)),
+        amount: value.amount,
+        playerPrincipal: record_opt_to_undefined(from_candid_opt_n18(_uploadFile, _downloadFile, value.playerPrincipal))
+    };
+}
+function from_candid_record_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     userPrincipal: [] | [string];
     response: string;
 }): {
@@ -494,7 +679,7 @@ function from_candid_record_n15(_uploadFile: (file: ExternalBlob) => Promise<Uin
     response: string;
 } {
     return {
-        userPrincipal: record_opt_to_undefined(from_candid_opt_n16(_uploadFile, _downloadFile, value.userPrincipal)),
+        userPrincipal: record_opt_to_undefined(from_candid_opt_n22(_uploadFile, _downloadFile, value.userPrincipal)),
         response: value.response
     };
 }
@@ -519,7 +704,16 @@ function from_candid_variant_n12(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): UserRole {
     return "admin" in value ? UserRole.admin : "user" in value ? UserRole.user : "guest" in value ? UserRole.guest : value;
 }
-function from_candid_variant_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_variant_n16(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    pending: null;
+} | {
+    confirmed: null;
+} | {
+    failed: null;
+}): Variant_pending_confirmed_failed {
+    return "pending" in value ? Variant_pending_confirmed_failed.pending : "confirmed" in value ? Variant_pending_confirmed_failed.confirmed : "failed" in value ? Variant_pending_confirmed_failed.failed : value;
+}
+function from_candid_variant_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     completed: {
         userPrincipal: [] | [string];
         response: string;
@@ -542,11 +736,14 @@ function from_candid_variant_n14(_uploadFile: (file: ExternalBlob) => Promise<Ui
 } {
     return "completed" in value ? {
         __kind__: "completed",
-        completed: from_candid_record_n15(_uploadFile, _downloadFile, value.completed)
+        completed: from_candid_record_n21(_uploadFile, _downloadFile, value.completed)
     } : "failed" in value ? {
         __kind__: "failed",
         failed: value.failed
     } : value;
+}
+function from_candid_vec_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_FlexaDeposit>): Array<FlexaDeposit> {
+    return value.map((x)=>from_candid_FlexaDeposit_n14(_uploadFile, _downloadFile, x));
 }
 function to_candid_UserRole_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
     return to_candid_variant_n9(_uploadFile, _downloadFile, value);

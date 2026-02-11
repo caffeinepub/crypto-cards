@@ -1,94 +1,27 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix Connect Wallet UI feedback (WalletConnect modal, install prompt, and error/progress feedback)",
+  "title": "Richer multi-stop colorful global background gradient",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Render a closable WalletConnect modal whenever the shared wallet state requests it (`showWalletConnectModal === true`).",
+      "summary": "Replace the subtle global background gradient on the loading screen and main app shell with a richer multi-stop gradient using theme colors, while preserving readable contrast in light and dark modes.",
       "acceptanceCriteria": [
-        "In Real mode, selecting “WalletConnect” from the Connect Wallet menu opens a modal on top of the app (not just a console log).",
-        "Closing the modal (Cancel button or dialog close) hides it and does not leave the UI in a stuck loading state.",
-        "No React console errors about missing providers/components when opening the modal."
+        "On both the loading screen and the main app shell, the background appears noticeably more colorful than the current gradient.",
+        "Text and UI elements remain clearly legible (no low-contrast sections) in both light mode (:root) and dark mode (.dark).",
+        "No backend changes are made.",
+        "The change is implemented without editing any files listed under frontend immutablePaths."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/contexts/Web3WalletContext.tsx",
-          "operation": "create",
-          "description": "Create a Web3WalletContext + Web3WalletProvider that owns a single `useWeb3Wallet` instance and exposes it to the app so Header + modals share the same `showWalletConnectModal` state (prevents separate hook instances from desyncing)."
-        },
-        {
-          "path": "frontend/src/hooks/useWeb3Wallet.ts",
+          "path": "frontend/src/index.css",
           "operation": "modify",
-          "description": "Refactor to support shared usage via context (e.g., export provider-friendly hook/value). Ensure `showWalletConnectModal` and `setShowWalletConnectModal(false)` reliably clear modal state when closed."
+          "description": "Add new reusable global utility class(es) for a richer, multi-stop background gradient that blends theme tokens (background + translucent primary/secondary/accent) with separate tuned definitions for :root and .dark to maintain foreground contrast."
         },
         {
           "path": "frontend/src/App.tsx",
           "operation": "modify",
-          "description": "Wrap the app UI with Web3WalletProvider and mount `WalletConnectModal` at the app level. Bind `open` to `wallet.showWalletConnectModal` and `onOpenChange` to `wallet.setShowWalletConnectModal(open)` so closing the dialog sets it back to false and prevents stuck loading."
-        },
-        {
-          "path": "frontend/src/components/Header.tsx",
-          "operation": "modify",
-          "description": "Switch Header to consume the shared wallet instance from Web3WalletContext so selecting “WalletConnect” updates the same state used by the app-level WalletConnectModal, guaranteeing visible feedback."
-        },
-        {
-          "path": "frontend/src/components/WalletConnectModal.tsx",
-          "operation": "modify",
-          "description": "Ensure the modal remains fully controlled by `open`/`onOpenChange` props and that its Cancel/close interactions call `onOpenChange(false)` (no internal state that can keep it open)."
-        }
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "summary": "Show a clear install prompt by mounting WalletInstallModal at the app level and clearing the install prompt state on dismiss.",
-      "acceptanceCriteria": [
-        "On a browser without `window.ethereum`, selecting “Coinbase Wallet” or “MetaMask” from the Connect Wallet menu opens an “Install a Wallet” modal.",
-        "Dismissing the install modal clears the install prompt state so it does not immediately re-open.",
-        "The rest of the app remains usable after closing the install modal."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useWeb3Wallet.ts",
-          "operation": "modify",
-          "description": "Expose a dedicated way to dismiss the install prompt (e.g., `dismissWalletNotDetected()` or a `setWalletNotDetected(false)` setter) without forcing a disconnect, so closing the modal simply clears `walletNotDetected` and does not disrupt other app state."
-        },
-        {
-          "path": "frontend/src/components/WalletInstallModal.tsx",
-          "operation": "modify",
-          "description": "Convert WalletInstallModal into a controlled component (accept `open` and `onOpenChange`) or consume the shared context instance, and on dismiss call the wallet dismiss function to clear `walletNotDetected` (do not call `disconnect()` just to close the dialog)."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Mount WalletInstallModal at the app level within the Web3WalletProvider scope. Bind it to `wallet.walletNotDetected` and clear that state on close so the modal becomes visible whenever no injected provider is detected and does not immediately re-open."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Add user-facing progress + error feedback for wallet connections, and disable connect UI while connecting.",
-      "acceptanceCriteria": [
-        "If the user rejects the wallet request, the UI shows an English error message (e.g., via toast) without requiring opening the dev console.",
-        "If a connection request is already pending, the UI informs the user to check their wallet app/extension.",
-        "While connecting, the Connect Wallet menu items/buttons are disabled or otherwise clearly indicate a connection attempt is in progress.",
-        "Successful connect results in the header showing the shortened address and the connected wallet label (as currently designed)."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useWeb3Wallet.ts",
-          "operation": "modify",
-          "description": "Normalize/retain connection status and error messages in state so UI can reliably react: keep `isConnecting` accurate for all wallet types, and ensure `error` is set to clear English strings for rejected/pending/failed requests."
-        },
-        {
-          "path": "frontend/src/components/Header.tsx",
-          "operation": "modify",
-          "description": "Use the app’s toast system (already wired via `<Toaster />`) to display `wallet.error` and connection guidance in English. Disable Connect Wallet dropdown items/buttons while `wallet.isConnecting` is true, and update button/menu labels to clearly indicate an in-progress connection (e.g., 'Connecting...'). Ensure success rendering (short address + wallet label) remains unchanged."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Ensure global toast host remains mounted (Toaster already present) and that app-level modals + header all consume the same wallet state so progress/disabled states are consistent across the UI."
+          "description": "Wire the new global background utility class into both the loading screen wrapper and the main app shell wrapper, replacing the existing subtle bg-gradient-to-br usage so both states share the updated colorful gradient."
         }
       ]
     }

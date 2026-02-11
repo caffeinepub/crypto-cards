@@ -260,11 +260,18 @@ actor {
     apiKey : Text;
   };
 
-  // New canister build metadata type
   type CanisterBuildMetadata = {
     commitHash : Text;
     buildTime : Int;
     dfxVersion : Text;
+  };
+
+  type FlexaDepositIntent = {
+    depositId : Text;
+    amount : Nat;
+    principal : Principal;
+    walletAddress : Text;
+    createdAt : Int;
   };
 
   let accessControlState = AccessControl.initState();
@@ -293,9 +300,9 @@ actor {
 
   // Canister build metadata
   var canisterBuildMetadata : CanisterBuildMetadata = {
-    commitHash = ""; // Will be set during deployment
-    buildTime = 0; // Will be set during deployment
-    dfxVersion = ""; // Will be set during deployment
+    commitHash = "";
+    buildTime = 0;
+    dfxVersion = "";
   };
 
   /// Set canister build/deploy metadata (admin-only)
@@ -342,6 +349,184 @@ actor {
 
   public query func transform(input : OutCall.TransformationInput) : async OutCall.TransformationOutput {
     OutCall.transform(input);
+  };
+
+  /// Flexa deposit intent endpoint
+  public shared ({ caller }) func initiateFlexaDeposit(amount : Nat, walletAddress : Text) : async FlexaDepositIntent {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized");
+    };
+
+    let depositId = caller.toText() # "." # Time.now().toText();
+    let now = Time.now();
+    let intent : FlexaDepositIntent = {
+      depositId;
+      amount;
+      principal = caller;
+      walletAddress;
+      createdAt = now;
+    };
+
+    // Add pending deposit with `pending` status
+    let pendingDeposit : FlexaDeposit = {
+      depositId;
+      amount;
+      status = #pending;
+      createdAt = now;
+      playerPrincipal = ?caller;
+      walletAddress = ?walletAddress;
+    };
+    pendingFlexaDeposits.add(depositId, pendingDeposit);
+
+    intent;
+  };
+
+  /// Flexa deposit callback (simulated webhook)
+  public shared ({ caller }) func updateFlexaDepositStatus(depositId : Text, status : Text) : async () {
+    if (not AccessControl.hasPermission(accessControlState, caller, #admin)) {
+      Runtime.trap("Unauthorized: Only admins can update deposit status");
+    };
+
+    let existing = pendingFlexaDeposits.get(depositId);
+    switch (existing) {
+      case (null) {
+        Runtime.trap("No such deposit found");
+      };
+      case (?pendingDeposit) {
+        let updatedStatus = switch (status) {
+          case ("confirmed") { #confirmed };
+          case ("failed") { #failed };
+          case (_) { Runtime.trap("Invalid status - must be 'confirmed' or 'failed'") };
+        };
+
+        let updatedDeposit : FlexaDeposit = {
+          depositId = pendingDeposit.depositId;
+          amount = pendingDeposit.amount;
+          status = updatedStatus;
+          createdAt = pendingDeposit.createdAt;
+          playerPrincipal = pendingDeposit.playerPrincipal;
+          walletAddress = pendingDeposit.walletAddress;
+        };
+
+        pendingFlexaDeposits.add(depositId, updatedDeposit);
+
+        if (updatedStatus == #confirmed) {
+          // Update player profile balance
+          switch (pendingDeposit.playerPrincipal) {
+            case (null) { () };
+            case (?playerPrincipal) {
+              switch (playerProfiles.get(playerPrincipal)) {
+                case (null) { () };
+                case (?existingProfile) {
+                  let txId = depositId;
+                  let newTransaction : TransactionRecord = {
+                    txId;
+                    txType = #deposit;
+                    amount = pendingDeposit.amount;
+                    timestamp = Time.now();
+                    status = #completed;
+                  };
+
+                  let updatedProfile : SerializablePlayerProfile = {
+                    walletAddress = existingProfile.walletAddress;
+                    playerStats = {
+                      gamesPlayed = existingProfile.playerStats.gamesPlayed;
+                      gamesWon = existingProfile.playerStats.gamesWon;
+                      totalWinnings = existingProfile.playerStats.totalWinnings;
+                      currentBalance = existingProfile.playerStats.currentBalance + pendingDeposit.amount;
+                      flopsSeen = existingProfile.playerStats.flopsSeen;
+                      flopsTotalHands = existingProfile.playerStats.flopsTotalHands;
+                    };
+                    transactionHistory = existingProfile.transactionHistory.concat([newTransaction]);
+                    totalWinnings = existingProfile.totalWinnings;
+                    currentBalance = existingProfile.currentBalance + pendingDeposit.amount;
+                    flopsSeenStats = existingProfile.flopsSeenStats;
+                  };
+                  playerProfiles.add(playerPrincipal, updatedProfile);
+                };
+              };
+            };
+          };
+        };
+      };
+    };
+  };
+
+  public query ({ caller }) func getDepositsByPrincipal(principal : Principal) : async [FlexaDeposit] {
+    if (principal != caller and not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Can only view your own deposits");
+    };
+    let filtered = pendingFlexaDeposits.values().filter(
+      func(d) {
+        switch (d.playerPrincipal) {
+          case (?p) { p == principal };
+          case (null) { false };
+        };
+      }
+    );
+    filtered.toArray();
+  };
+
+  public query ({ caller }) func getDepositsByWallet(walletAddress : Text) : async [FlexaDeposit] {
+    let filtered = pendingFlexaDeposits.values().filter(
+      func(d) {
+        switch (d.walletAddress) {
+          case (?a) { a == walletAddress };
+          case (null) { false };
+        };
+      }
+    );
+    filtered.toArray();
+  };
+
+  public shared ({ caller }) func cancelDeposit(depositId : Text) : async () {
+    if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+      Runtime.trap("Unauthorized: Only users can cancel deposits");
+    };
+    let existing = pendingFlexaDeposits.get(depositId);
+    switch (existing) {
+      case (null) {
+        Runtime.trap("Deposit not found");
+      };
+      case (?deposit) {
+        pendingFlexaDeposits.remove(depositId);
+      };
+    };
+  };
+
+  public shared ({ caller }) func adminCreateDeposit(depositId : Text, amount : Nat, playerPrincipal : Principal, walletAddress : Text) : async () {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admins can create deposits");
+    };
+    let newDeposit : FlexaDeposit = {
+      depositId;
+      amount;
+      status = #pending;
+      createdAt = Time.now();
+      playerPrincipal = ?playerPrincipal;
+      walletAddress = ?walletAddress;
+    };
+    pendingFlexaDeposits.add(depositId, newDeposit);
+  };
+
+  public shared ({ caller }) func batchUpdateDepositStatus(updates : [(Text, Text)]) : async () {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admins can batch update deposit status");
+    };
+
+    for ((depositId, status) in updates.values()) {
+      await updateFlexaDepositStatus(depositId, status);
+    };
+  };
+
+  public shared ({ caller }) func batchCreateDeposits(deposits : [(Text, Nat, Principal, Text)]) : async () {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admins can batch create deposits");
+    };
+
+    for ((depositId, amount, principal, wallet) in deposits.values()) {
+      await adminCreateDeposit(depositId, amount, principal, wallet);
+    };
   };
 
   // FULL ACCESS CONTROL COPY PASTE

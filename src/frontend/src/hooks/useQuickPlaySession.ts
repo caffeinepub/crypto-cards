@@ -158,6 +158,28 @@ export function useQuickPlaySession() {
     }
   }, [session, isProcessing]);
 
+  const startOmahaNextHand = useCallback(async () => {
+    if (!session || session.gameType !== 'omaha4Card' || isProcessing || processingRef.current) return;
+    
+    processingRef.current = true;
+    setIsProcessing(true);
+    try {
+      const newSession = executeAction(session, { type: 'omahaNextHand' });
+      setSession(newSession);
+      toast.success('New hand started!');
+      
+      // Bot processing will be handled by useEffect
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to start next hand';
+      toast.error(message);
+      processingRef.current = false;
+      setIsProcessing(false);
+    } finally {
+      processingRef.current = false;
+      setIsProcessing(false);
+    }
+  }, [session, isProcessing]);
+
   const resetGame = useCallback(() => {
     setSession(null);
     setIsProcessing(false);
@@ -171,6 +193,7 @@ export function useQuickPlaySession() {
     submitBid,
     playCard,
     performOmahaAction,
+    startOmahaNextHand,
     resetGame,
   };
 }
