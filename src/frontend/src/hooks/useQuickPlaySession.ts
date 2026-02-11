@@ -1,14 +1,65 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { createSession, executeAction, executeBotAction, QuickPlaySession, GameType } from '../games/session/quickPlaySession';
 import { Card as SpadesCard, SpadesGameState } from '../games/spades/types';
+import { OmahaGameState } from '../games/omaha/types';
 import { toast } from 'sonner';
 import { sleep } from '../utils/sleep';
 
 const BOT_ACTION_DELAY = 600; // milliseconds between bot actions
+const MAX_BOT_ITERATIONS = 100; // Safety cap to prevent infinite loops
 
 export function useQuickPlaySession() {
   const [session, setSession] = useState<QuickPlaySession | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const processingRef = useRef(false);
+
+  const processBotActions = useCallback(async (currentSession: QuickPlaySession) => {
+    let workingSession = currentSession;
+    let iterations = 0;
+    
+    // Process bot actions one at a time with delays
+    while (iterations < MAX_BOT_ITERATIONS) {
+      const nextSession = executeBotAction(workingSession);
+      if (!nextSession) break;
+      
+      await sleep(BOT_ACTION_DELAY);
+      workingSession = nextSession;
+      setSession(workingSession);
+      iterations++;
+    }
+    
+    if (iterations >= MAX_BOT_ITERATIONS) {
+      console.warn('Bot processing hit safety cap');
+    }
+    
+    return workingSession;
+  }, []);
+
+  // Auto-process bot turns whenever session updates
+  useEffect(() => {
+    if (!session || processingRef.current) return;
+
+    const shouldProcessBots = 
+      (session.gameType === 'spades' || session.gameType === 'omaha4Card') &&
+      !session.state.gameOver &&
+      session.state.players[session.state.currentPlayerIndex]?.isBot;
+
+    if (shouldProcessBots) {
+      processingRef.current = true;
+      setIsProcessing(true);
+      
+      processBotActions(session)
+        .then(() => {
+          processingRef.current = false;
+          setIsProcessing(false);
+        })
+        .catch((error) => {
+          console.error('Bot processing error:', error);
+          processingRef.current = false;
+          setIsProcessing(false);
+        });
+    }
+  }, [session, processBotActions]);
 
   const startGame = useCallback((gameType: GameType, playerName: string) => {
     try {
@@ -21,25 +72,10 @@ export function useQuickPlaySession() {
     }
   }, []);
 
-  const processBotActions = useCallback(async (currentSession: QuickPlaySession) => {
-    let workingSession = currentSession;
-    
-    // Process bot actions one at a time with delays
-    while (true) {
-      const nextSession = executeBotAction(workingSession);
-      if (!nextSession) break;
-      
-      await sleep(BOT_ACTION_DELAY);
-      workingSession = nextSession;
-      setSession(workingSession);
-    }
-    
-    return workingSession;
-  }, []);
-
   const submitBid = useCallback(async (bid: number) => {
-    if (!session || session.gameType !== 'spades' || isProcessing) return;
+    if (!session || session.gameType !== 'spades' || isProcessing || processingRef.current) return;
     
+    processingRef.current = true;
     setIsProcessing(true);
     try {
       const oldState = session.state as SpadesGameState;
@@ -52,20 +88,22 @@ export function useQuickPlaySession() {
       const newSession = executeAction(session, { type: 'submitBid', bid });
       setSession(newSession);
       
-      // Process bot bids with pacing
-      const finalSession = await processBotActions(newSession);
-      setSession(finalSession);
+      // Bot processing will be handled by useEffect
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Invalid bid';
       toast.error(message);
+      processingRef.current = false;
+      setIsProcessing(false);
     } finally {
+      processingRef.current = false;
       setIsProcessing(false);
     }
-  }, [session, isProcessing, processBotActions]);
+  }, [session, isProcessing]);
 
   const playCard = useCallback(async (card: SpadesCard) => {
-    if (!session || session.gameType !== 'spades' || isProcessing) return;
+    if (!session || session.gameType !== 'spades' || isProcessing || processingRef.current) return;
     
+    processingRef.current = true;
     setIsProcessing(true);
     try {
       const oldState = session.state as SpadesGameState;
@@ -86,40 +124,44 @@ export function useQuickPlaySession() {
       
       setSession(newSession);
       
-      // Process bot actions with pacing
-      const finalSession = await processBotActions(newSession);
-      setSession(finalSession);
+      // Bot processing will be handled by useEffect
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Invalid move';
       toast.error(message);
+      processingRef.current = false;
+      setIsProcessing(false);
     } finally {
+      processingRef.current = false;
       setIsProcessing(false);
     }
-  }, [session, isProcessing, processBotActions]);
+  }, [session, isProcessing]);
 
   const performOmahaAction = useCallback(async (action: 'fold' | 'check' | 'call' | 'bet', amount?: number) => {
-    if (!session || session.gameType !== 'omaha4Card' || isProcessing) return;
+    if (!session || session.gameType !== 'omaha4Card' || isProcessing || processingRef.current) return;
     
+    processingRef.current = true;
     setIsProcessing(true);
     try {
       // Perform player's action
       const newSession = executeAction(session, { type: 'omahaAction', action, amount });
       setSession(newSession);
       
-      // Process bot actions with pacing
-      const finalSession = await processBotActions(newSession);
-      setSession(finalSession);
+      // Bot processing will be handled by useEffect
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Invalid action';
       toast.error(message);
+      processingRef.current = false;
+      setIsProcessing(false);
     } finally {
+      processingRef.current = false;
       setIsProcessing(false);
     }
-  }, [session, isProcessing, processBotActions]);
+  }, [session, isProcessing]);
 
   const resetGame = useCallback(() => {
     setSession(null);
     setIsProcessing(false);
+    processingRef.current = false;
   }, []);
 
   return {

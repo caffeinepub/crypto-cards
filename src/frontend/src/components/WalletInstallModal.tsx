@@ -2,14 +2,14 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ExternalLink, Wallet } from 'lucide-react';
-import { useWeb3Wallet } from '../hooks/useWeb3Wallet';
+import { useWeb3WalletContext } from '../contexts/Web3WalletContext';
 import { SiCoinbase } from 'react-icons/si';
 
 export default function WalletInstallModal() {
-  const wallet = useWeb3Wallet();
+  const wallet = useWeb3WalletContext();
 
   const handleClose = () => {
-    wallet.disconnect();
+    wallet.dismissWalletNotDetected();
   };
 
   return (
@@ -70,6 +70,16 @@ export default function WalletInstallModal() {
               After installing a browser wallet, refresh this page to connect.
             </p>
           </div>
+        </div>
+
+        <div className="pt-4 border-t">
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={handleClose}
+          >
+            Close
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

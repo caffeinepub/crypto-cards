@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Wallet, Info } from 'lucide-react';
 import { toast } from 'sonner';
-import { GameMode } from '../App';
+import type { GameMode } from '../App';
 import { useWeb3Wallet } from '../hooks/useWeb3Wallet';
 import { useGetCallerUserProfile, useSaveCallerUserProfile } from '../hooks/useQueries';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
@@ -41,10 +41,10 @@ export default function ProfileSetupModal({ gameMode }: ProfileSetupModalProps) 
 
   // Check if profile exists
   useEffect(() => {
-    if (gameMode === 'real' && isAuthenticated && isFetched && !profileLoading && userProfile === null) {
+    if (gameMode === 'forReal' && isAuthenticated && isFetched && !profileLoading && userProfile === null) {
       setShowModal(true);
       setUsername(`Player_${currentAddress.slice(2, 8)}`);
-    } else if (gameMode === 'fun') {
+    } else if (gameMode === 'forFun') {
       const hasProfile = localStorage.getItem('offlineUserProfile');
       if (!hasProfile) {
         setShowModal(true);
@@ -61,7 +61,7 @@ export default function ProfileSetupModal({ gameMode }: ProfileSetupModalProps) 
       return;
     }
 
-    if (gameMode === 'real') {
+    if (gameMode === 'forReal') {
       // Online mode - save to backend
       try {
         await saveProfileMutation.mutateAsync({
@@ -104,7 +104,7 @@ export default function ProfileSetupModal({ gameMode }: ProfileSetupModalProps) 
         <DialogHeader>
           <DialogTitle>Welcome to Crypto Cards!</DialogTitle>
           <DialogDescription>
-            {gameMode === 'real' 
+            {gameMode === 'forReal' 
               ? 'Set up your player profile for multiplayer gaming'
               : 'Set up your player profile to start playing offline'}
           </DialogDescription>
@@ -113,7 +113,7 @@ export default function ProfileSetupModal({ gameMode }: ProfileSetupModalProps) 
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription className="text-xs">
-            {gameMode === 'real' ? (
+            {gameMode === 'forReal' ? (
               <><strong>Live Network Mode:</strong> Your profile will be stored on the Internet Computer blockchain. Play with real players and crypto wagers!</>
             ) : (
               <><strong>Offline Test Mode:</strong> All data is stored locally in your browser. Play against AI bots instantly!</>
@@ -145,7 +145,7 @@ export default function ProfileSetupModal({ gameMode }: ProfileSetupModalProps) 
               </span>
             </div>
             <p className="text-xs text-muted-foreground">
-              {gameMode === 'real' 
+              {gameMode === 'forReal' 
                 ? 'Your connected wallet on Base network'
                 : 'Simulated wallet for offline mode'}
             </p>

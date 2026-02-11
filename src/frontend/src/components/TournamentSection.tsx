@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Trophy, Bot, Wifi } from 'lucide-react';
-import { GameMode } from '../App';
+import type { GameMode } from '../App';
 
 interface TournamentSectionProps {
   gameMode: GameMode;
@@ -13,10 +13,10 @@ export default function TournamentSection({ gameMode }: TournamentSectionProps) 
       <div>
         <h2 className="text-3xl font-bold flex items-center gap-2">
           Tournaments
-          {gameMode === 'real' && <Wifi className="w-6 h-6 text-green-500" />}
+          {gameMode === 'forReal' && <Wifi className="w-6 h-6 text-green-500" />}
         </h2>
         <p className="text-muted-foreground">
-          {gameMode === 'real'
+          {gameMode === 'forReal'
             ? 'Compete in tournaments with real players and crypto prizes'
             : 'Tournament mode with AI opponents'}
         </p>
@@ -33,7 +33,7 @@ export default function TournamentSection({ gameMode }: TournamentSectionProps) 
           </div>
           <CardTitle>Tournaments Coming Soon</CardTitle>
           <CardDescription>
-            {gameMode === 'real'
+            {gameMode === 'forReal'
               ? 'Multi-round tournaments with real crypto prizes on Base network'
               : 'Multi-round tournaments with AI opponents and simulated prizes'}
           </CardDescription>
@@ -44,13 +44,13 @@ export default function TournamentSection({ gameMode }: TournamentSectionProps) 
               <Trophy className="w-3 h-3 mr-1" />
               Prize Pools
             </Badge>
-            {gameMode === 'fun' && (
+            {gameMode === 'forFun' && (
               <Badge variant="outline">
                 <Bot className="w-3 h-3 mr-1" />
                 AI Support
               </Badge>
             )}
-            {gameMode === 'real' && (
+            {gameMode === 'forReal' && (
               <Badge variant="default" className="bg-green-600">
                 Live Network
               </Badge>
@@ -58,7 +58,7 @@ export default function TournamentSection({ gameMode }: TournamentSectionProps) 
           </div>
           <p className="text-sm text-muted-foreground text-center max-w-md">
             Tournament functionality will be available in a future update. 
-            {gameMode === 'real' 
+            {gameMode === 'forReal' 
               ? ' Compete for real crypto prizes with players worldwide.'
               : ' Practice with AI opponents to prepare for competitive play.'}
           </p>

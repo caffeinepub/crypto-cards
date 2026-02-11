@@ -13,8 +13,10 @@ export function chooseBotAction(state: OmahaGameState, botId: string): { action:
     if (random < 0.7) {
       return { action: 'check' };
     } else {
-      const betAmount = Math.min(50, bot.chips);
-      return { action: 'bet', amount: betAmount };
+      // Bet as "raise to" amount (current bet + additional bet)
+      const additionalBet = Math.min(50, bot.chips);
+      const raiseToAmount = bot.currentBet + additionalBet;
+      return { action: 'bet', amount: raiseToAmount };
     }
   }
   

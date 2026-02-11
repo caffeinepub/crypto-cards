@@ -1,25 +1,85 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T16:25:15.866Z",
-  "summary": "Diff adds Spades multi-hand scoring utilities (target=500, hand scoring, winner determination), extends Spades state to track persistent totalScore/handNumber, and updates the Spades engine/UI to support a 500-point target flow. Due to truncation of key modified files, some acceptance-criteria behaviors (auto-starting new hands and game-over gating) cannot be fully verified from provided evidence.",
-  "missing_requirements": [],
+  "generatedAt": "2026-02-11T17:22:26.108Z",
+  "summary": "Diff adds a new Web3Wallet context/provider wrapper, updates wallet hook for better state/error handling, and introduces/updates WalletInstallModal. However, the diff summary does not provide clear evidence that the app actually mounts and renders the required WalletConnect modal and WalletInstall modal at the app level, nor that connect UI elements are disabled during connection attempts. Several unrelated UI/features were also modified/added beyond the wallet-connect UI fix.",
+  "missing_requirements": [
+    {
+      "id": "REQ-1",
+      "requirement": "Render a WalletConnect modal whenever `useWeb3Wallet().showWalletConnectModal` is true, and allow closing it to set `showWalletConnectModal` back to false.",
+      "reason": "Although `WalletConnectModal` is imported in `App.tsx` and `showWalletConnectModal/setShowWalletConnectModal` exist in the wallet hook/context, the diff summary does not show `WalletConnectModal` being rendered conditionally based on `showWalletConnectModal`, nor any close handler that sets the flag back to false.",
+      "evidence": [
+        "frontend/src/App.tsx (imports WalletConnectModal but render not shown in truncated diff)",
+        "frontend/src/hooks/useWeb3Wallet.ts (state includes showWalletConnectModal/setShowWalletConnectModal, but no modal rendering here)",
+        "frontend/src/contexts/Web3WalletContext.tsx (passes through wallet state incl. showWalletConnectModal)"
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "requirement": "Mount `WalletInstallModal` at the app level so `wallet.walletNotDetected` displays a visible install modal; dismissing clears the install prompt state without re-opening and keeps the app usable.",
+      "reason": "`WalletInstallModal` is implemented and uses `wallet.walletNotDetected`, but the diff summary does not show it being mounted/rendered at the app level (only imported in `App.tsx`, with the render portion truncated). Also, context-level `dismissWalletNotDetected` is implemented as `wallet.disconnect()` with a comment indicating it still needs proper hook support, which may not meet the requirement to clear only the install prompt state.",
+      "evidence": [
+        "frontend/src/App.tsx (imports WalletInstallModal but render not shown in truncated diff)",
+        "frontend/src/components/WalletInstallModal.tsx (Dialog open={wallet.walletNotDetected}, close calls wallet.dismissWalletNotDetected())",
+        "frontend/src/contexts/Web3WalletContext.tsx (dismissWalletNotDetected implemented via wallet.disconnect() with TODO comment)"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "requirement": "Show user-facing error/progress feedback for wallet connections (toast/inline), handle pending/rejected states with English messages, and disable connect UI while `wallet.isConnecting` is true.",
+      "reason": "There is evidence of toast-based error display (Header listens to `wallet.error` and calls `toast.error`), and the hook summary claims improved English errors. However, the diff summary does not show connect menu items/buttons being disabled or visually indicating progress based on `wallet.isConnecting`, nor explicit UI messaging for the 'request pending' case.",
+      "evidence": [
+        "frontend/src/components/Header.tsx (useEffect shows toast.error(wallet.error); no isConnecting usage shown in truncated diff)",
+        "frontend/src/hooks/useWeb3Wallet.ts (has isConnecting/error fields; truncated before showing pending/rejected handling details)"
+      ]
+    }
+  ],
   "hallucinated_features": [
     {
-      "description": "Introduced a `RENEGE_PENALTY` constant in Spades scoring module that is not requested by the BuildRequest.",
-      "reason": "BuildRequest focuses on playing to 500 points and implementing hand/total scoring; it does not mention adding or changing renege penalty constants.",
+      "description": "Added extensive Quick Play / Lobby / Tournament placeholder UI changes unrelated to wallet connect responsiveness.",
+      "reason": "BuildRequest focuses on wallet-connect UI feedback (WalletConnect modal, install prompt modal, and error/progress feedback). The diff includes new/modified gameplay and placeholder sections not requested.",
       "evidence": [
-        "frontend/src/games/spades/scoring.ts"
+        "frontend/src/components/LobbyBrowser.tsx",
+        "frontend/src/components/TournamentSection.tsx",
+        "frontend/src/components/QuickPlayGame.tsx (mentioned in frontend-file-summaries.txt)"
+      ]
+    },
+    {
+      "description": "Introduced/modified actor retry/connectivity logic beyond the wallet-connect UI fix scope.",
+      "reason": "BuildRequest explicitly notes no backend changes are required; improving actor retry logic is not requested for the wallet-connect UI fix.",
+      "evidence": [
+        "frontend/src/hooks/useActor.ts (mentioned in frontend-file-summaries.txt)",
+        "frontend/src/hooks/useActorWithRetry.ts (mentioned in frontend-file-summaries.txt)"
+      ]
+    },
+    {
+      "description": "Large global styling/theme additions (OKLCH color system, card utilities, poker table theme) unrelated to wallet connect flow.",
+      "reason": "Not requested by the wallet-connect UI fix requirements.",
+      "evidence": [
+        "frontend/src/index.css (mentioned in frontend-file-summaries.txt)"
+      ]
+    },
+    {
+      "description": "Added a new Web3WalletContext provider layer (Web3WalletProvider/useWeb3WalletContext).",
+      "reason": "Not explicitly requested; requirements only mention `useWeb3Wallet()` behavior and app-level modal mounting. A context layer may be a valid refactor, but it is an additional feature beyond the stated requirements.",
+      "evidence": [
+        "frontend/src/contexts/Web3WalletContext.tsx",
+        "frontend/src/App.tsx (imports Web3WalletProvider/useWeb3WalletContext)"
       ]
     }
   ],
   "confidence": 0.62,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/components/QuickPlayGame.tsx",
-    "frontend/src/games/spades/engine.ts",
-    "frontend/src/games/spades/scoring.ts",
-    "frontend/src/games/spades/types.ts",
+    "frontend/src/App.tsx",
+    "frontend/src/components/Header.tsx",
+    "frontend/src/components/LobbyBrowser.tsx",
+    "frontend/src/components/ProfileSetupModal.tsx",
+    "frontend/src/components/TournamentSection.tsx",
+    "frontend/src/components/WalletInstallModal.tsx",
+    "frontend/src/components/WalletSection.tsx",
+    "frontend/src/contexts/Web3WalletContext.tsx",
+    "frontend/src/hooks/useWeb3Wallet.ts",
     "project_state.json"
   ]
 }

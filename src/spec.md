@@ -1,13 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Update Spades Quick Play so games play across multiple hands and end when a player reaches 500+ total points.
+**Goal:** Make the Connect Wallet flow responsive and user-friendly by showing the WalletConnect modal, showing an install prompt when no injected wallet exists, and providing clear progress/error feedback during connection attempts.
 
 **Planned changes:**
-- Change Quick Play end-of-game logic to trigger game over only when at least one player has 500+ total points after a completed hand.
-- Implement per-hand scoring (based on each player’s bid and tricks won) and maintain persistent total scores across hands within the same Quick Play session.
-- Update the UI to show each player’s running total score and display the win target (e.g., "Target: 500").
-- When a hand ends and no player has reached 500, automatically start a new hand (fresh deal; reset bids/tricks/spadesBroken/current trick).
-- Define deterministic winner selection when multiple players reach 500+ in the same hand (e.g., highest total points; deterministic tie handling).
+- Render a closable WalletConnect modal whenever `useWeb3Wallet().showWalletConnectModal` is true, and ensure closing it sets the flag back to false.
+- Mount `WalletInstallModal` at the app level so `wallet.walletNotDetected` reliably shows an “Install a Wallet” modal, and clear the prompt state when dismissed.
+- Add user-facing progress/error feedback for wallet connections: disable connect actions while `wallet.isConnecting`, and show English messages for rejection, failures, or pending requests.
 
-**User-visible outcome:** Players can play Spades Quick Play as a full game to 500 points, see running total scores and the 500-point target, and continue seamlessly into new hands until the game ends at 500+.
+**User-visible outcome:** Tapping “Connect Wallet” visibly opens the appropriate modal (WalletConnect or Install Wallet), users can close modals without getting stuck, and connection attempts show clear in-app progress/error messages instead of requiring the dev console.

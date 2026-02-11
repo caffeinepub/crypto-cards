@@ -20,6 +20,7 @@ interface Web3Wallet {
   checkWalletAvailability: () => boolean;
   showWalletConnectModal: boolean;
   setShowWalletConnectModal: (show: boolean) => void;
+  dismissWalletNotDetected: () => void;
 }
 
 // Base Mainnet Chain ID
@@ -318,7 +319,9 @@ export function useWeb3Wallet(): Web3Wallet {
       } else if (walletType === 'coinbase' || walletType === 'metamask') {
         if (!hasInjectedProvider()) {
           setWalletNotDetected(true);
-          throw new Error('No Web3 wallet detected. Please install Coinbase Wallet or MetaMask.');
+          setIsConnecting(false);
+          setError('No Web3 wallet detected. Please install Coinbase Wallet or MetaMask.');
+          return;
         }
 
         const provider = (window as any).ethereum;
@@ -372,14 +375,15 @@ export function useWeb3Wallet(): Web3Wallet {
       }
     } catch (err: any) {
       console.error('[Wallet] Connection error:', err);
-      setError(err.message || 'Failed to connect wallet');
-      setIsTransactionReady(false);
       
       if (err.code === 4001) {
-        setError('User rejected the connection request');
+        setError('You rejected the connection request. Please try again.');
       } else if (err.code === -32002) {
-        setError('Connection request already pending. Please check your wallet.');
+        setError('Connection request already pending. Please check your wallet extension.');
+      } else {
+        setError(err.message || 'Failed to connect wallet. Please try again.');
       }
+      setIsTransactionReady(false);
     } finally {
       if (walletType !== 'walletconnect') {
         setIsConnecting(false);
@@ -399,8 +403,17 @@ export function useWeb3Wallet(): Web3Wallet {
     setChainId(null);
     setSelectedWallet(null);
     setIsTransactionReady(false);
+    setError(null);
+    setWalletNotDetected(false);
     localStorage.removeItem('lastConnectedWallet');
   }, [selectedWallet]);
+
+  const dismissWalletNotDetected = useCallback(() => {
+    console.log('[Wallet] Dismissing wallet not detected state');
+    setWalletNotDetected(false);
+    setError(null);
+    setIsConnecting(false);
+  }, []);
 
   const switchToBase = useCallback(async () => {
     console.log('[Wallet] Switching to Base network');
@@ -479,5 +492,6 @@ export function useWeb3Wallet(): Web3Wallet {
     checkWalletAvailability,
     showWalletConnectModal,
     setShowWalletConnectModal,
+    dismissWalletNotDetected,
   };
 }

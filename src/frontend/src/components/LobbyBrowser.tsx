@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Zap, Spade, Diamond } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { GameMode } from '../App';
+import type { GameMode } from '../App';
 
 interface LobbyBrowserProps {
   gameMode: GameMode;
@@ -18,7 +18,7 @@ export default function LobbyBrowser({ gameMode, onQuickPlay }: LobbyBrowserProp
           <span className="gradient-text">Game Lobbies</span>
         </h2>
         <p className="text-muted-foreground mt-2">
-          {gameMode === 'real'
+          {gameMode === 'forReal'
             ? 'Browse active lobbies or create your own real-money game'
             : 'Play against AI bots in offline mode'}
         </p>

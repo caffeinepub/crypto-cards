@@ -1,7 +1,10 @@
-import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Toaster } from '@/components/ui/sonner';
+import { useEffect, useState } from 'react';
+import { useInternetIdentity } from './hooks/useInternetIdentity';
+import { useGetCallerUserProfile } from './hooks/useQueries';
+import { useActor } from './hooks/useActor';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import ProfileSetupModal from './components/ProfileSetupModal';
@@ -10,10 +13,11 @@ import TournamentSection from './components/TournamentSection';
 import WalletSection from './components/WalletSection';
 import AdminSettings from './components/AdminSettings';
 import QuickPlayGame from './components/QuickPlayGame';
-import LivePublishStatus from './components/LivePublishStatus';
-import { useGetCallerUserProfile } from './hooks/useQueries';
-import { useInternetIdentity } from './hooks/useInternetIdentity';
-import { useActor } from './hooks/useActor';
+import WalletConnectModal from './components/WalletConnectModal';
+import WalletInstallModal from './components/WalletInstallModal';
+import { Web3WalletProvider, useWeb3WalletContext } from './contexts/Web3WalletContext';
+
+export type GameMode = 'forFun' | 'forReal';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,115 +28,122 @@ const queryClient = new QueryClient({
   },
 });
 
-export type GameMode = 'fun' | 'real';
-
 function AppContent() {
-  const [gameMode, setGameMode] = useState<GameMode>('fun');
-  const [activeTab, setActiveTab] = useState('lobbies');
-  const [quickPlayGame, setQuickPlayGame] = useState<{ type: 'spades' | 'omaha4Card' } | null>(null);
-  const [gameKey, setGameKey] = useState(0);
-  const [isAdmin, setIsAdmin] = useState(false);
-
   const { identity, isInitializing } = useInternetIdentity();
   const { actor } = useActor();
+  const wallet = useWeb3WalletContext();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [checkingAdmin, setCheckingAdmin] = useState(true);
+  const [mode, setMode] = useState<GameMode>('forFun');
+  const [activeGame, setActiveGame] = useState<'spades' | 'omaha4Card' | null>(null);
+
   const isAuthenticated = !!identity;
 
-  const { data: userProfile, isLoading: profileLoading, isFetched } = useGetCallerUserProfile();
+  const {
+    data: userProfile,
+    isLoading: profileLoading,
+    isFetched,
+  } = useGetCallerUserProfile();
 
-  // Check admin status
   useEffect(() => {
-    const checkAdmin = async () => {
-      if (actor && isAuthenticated) {
+    const checkAdminStatus = async () => {
+      if (actor && identity) {
         try {
           const adminStatus = await actor.isCallerAdmin();
           setIsAdmin(adminStatus);
         } catch (error) {
+          console.error('Failed to check admin status:', error);
           setIsAdmin(false);
         }
       } else {
         setIsAdmin(false);
       }
+      setCheckingAdmin(false);
     };
-    checkAdmin();
-  }, [actor, isAuthenticated]);
+
+    checkAdminStatus();
+  }, [actor, identity]);
+
+  const showProfileSetup =
+    isAuthenticated && !profileLoading && isFetched && userProfile === null;
 
   const handleQuickPlay = (gameType: 'spades' | 'omaha4Card') => {
-    setQuickPlayGame({ type: gameType });
-    setGameKey(prev => prev + 1);
+    setActiveGame(gameType);
   };
 
   const handleExitGame = () => {
-    setQuickPlayGame(null);
-    setActiveTab('lobbies');
+    setActiveGame(null);
   };
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      setGameMode('fun');
-    }
-  }, [isAuthenticated]);
-
-  const tabCount = 4 + (isAdmin ? 1 : 0);
-
-  if (isInitializing || (isAuthenticated && profileLoading)) {
+  if (isInitializing || checkingAdmin) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <Header gameMode={gameMode} onGameModeChange={setGameMode} />
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-background to-primary/5">
+      <Header mode={mode} onModeChange={setMode} />
 
       <main className="flex-1 container mx-auto px-4 py-8">
-        {quickPlayGame ? (
+        {activeGame ? (
           <QuickPlayGame
-            key={gameKey}
-            gameType={quickPlayGame.type}
-            gameMode={gameMode}
+            gameType={activeGame}
+            gameMode={mode}
             onExit={handleExitGame}
             playerName={userProfile?.name || 'Player'}
           />
         ) : (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className={`grid w-full grid-cols-${tabCount} mb-8`}>
-              <TabsTrigger value="lobbies">Game Lobbies</TabsTrigger>
+          <Tabs defaultValue="quick-play" className="w-full">
+            <TabsList className="grid w-full grid-cols-4 mb-8">
+              <TabsTrigger value="quick-play">Quick Play</TabsTrigger>
+              <TabsTrigger value="lobbies">Lobbies</TabsTrigger>
               <TabsTrigger value="tournaments">Tournaments</TabsTrigger>
               <TabsTrigger value="wallet">Wallet</TabsTrigger>
-              <TabsTrigger value="status">Live Status</TabsTrigger>
-              {isAdmin && <TabsTrigger value="admin">Admin</TabsTrigger>}
             </TabsList>
 
-            <TabsContent value="lobbies">
-              <LobbyBrowser gameMode={gameMode} onQuickPlay={handleQuickPlay} />
+            <TabsContent value="quick-play" className="space-y-6">
+              <LobbyBrowser gameMode={mode} onQuickPlay={handleQuickPlay} />
             </TabsContent>
 
-            <TabsContent value="tournaments">
-              <TournamentSection gameMode={gameMode} />
+            <TabsContent value="lobbies" className="space-y-6">
+              <LobbyBrowser gameMode={mode} onQuickPlay={handleQuickPlay} />
             </TabsContent>
 
-            <TabsContent value="wallet">
-              <WalletSection gameMode={gameMode} />
+            <TabsContent value="tournaments" className="space-y-6">
+              <TournamentSection gameMode={mode} />
             </TabsContent>
 
-            <TabsContent value="status">
-              <LivePublishStatus />
+            <TabsContent value="wallet" className="space-y-6">
+              <WalletSection gameMode={mode} />
             </TabsContent>
-
-            {isAdmin && (
-              <TabsContent value="admin">
-                <AdminSettings />
-              </TabsContent>
-            )}
           </Tabs>
+        )}
+
+        {isAdmin && (
+          <div className="mt-8">
+            <AdminSettings />
+          </div>
         )}
       </main>
 
       <Footer />
-      <Toaster />
-      <ProfileSetupModal gameMode={gameMode} />
+
+      <ProfileSetupModal gameMode={mode} />
+      
+      <WalletConnectModal
+        open={wallet.showWalletConnectModal}
+        onOpenChange={(open) => wallet.setShowWalletConnectModal(open)}
+      />
+      
+      <WalletInstallModal />
+
+      <Toaster position="top-right" />
     </div>
   );
 }
@@ -140,7 +151,9 @@ function AppContent() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AppContent />
+      <Web3WalletProvider>
+        <AppContent />
+      </Web3WalletProvider>
     </QueryClientProvider>
   );
 }

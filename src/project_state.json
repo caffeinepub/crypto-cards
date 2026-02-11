@@ -4,36 +4,37 @@
   "summary": "New project",
   "architectural_notes": [],
   "known_issues": [
-    "Spades game may be using an incorrect end-game score (should be 500 points)."
+    "Connect wallet button appears unresponsive (nothing happens when pressed)."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-update-the-spades-quick-play-game-rules-so-that-a-full-spades-game-ends-when-a-player-reaches-or-exceeds-500-total-points-rather-than-ending-after-a-single-13-trick-hand",
-      "title": "Update the Spades Quick Play game rules so that a full Spades game ends when a player reaches (or exceeds) 500 total points, rather than ending after a single 13-trick hand.",
+      "id": "feature-ensure-the-walletconnect-connection-path-triggers-visible-ui-feedback-by-rendering-a-walletconnect-modal-whenever-useweb3wallet-showwalletconnectmodal-is-set-to-true-and-allow-the-modal-to-be-closed-which-must-set-showwalletconnectmodal-back-to-false",
+      "title": "Ensure the WalletConnect connection path triggers visible UI feedback by rendering a WalletConnect modal whenever `useWeb3Wallet().showWalletConnectModal` is set to true, and allow the modal to be closed (which must set `showWalletConnectModal` back to false).",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-implement-spades-hand-scoring-and-persistent-per-player-total-score-across-hands-within-the-same-quick-play-session-including-showing-the-current-target-of-500-points-in-the-ui",
-      "title": "Implement Spades hand scoring and persistent per-player total score across hands within the same Quick Play session, including showing the current target of 500 points in the UI.",
+      "id": "feature-ensure-users-see-a-clear-install-prompt-when-no-injected-wallet-provider-is-detected-by-mounting-walletinstallmodal-at-the-app-level-so-that-wallet-walletnotdetected-results-in-a-visible-modal-instead-of-only-setting-state",
+      "title": "Ensure users see a clear install prompt when no injected wallet provider is detected by mounting `WalletInstallModal` at the app level so that `wallet.walletNotDetected` results in a visible modal instead of only setting state.",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
-    }
-  ],
-  "new_feature_requests": [
+    },
     {
-      "id": "AR-1",
-      "summary": "Update Spades game scoring target so games end at 500 points",
-      "reqIds": [],
-      "status": "pending"
+      "id": "feature-add-user-facing-error-and-progress-feedback-for-wallet-connections-when-wallet-connect-fails-or-a-request-is-pending-rejected-show-an-english-toast-and-or-inline-message-and-reflect-wallet-isconnecting-by-disabling-relevant-connect-ui-elements-and-indicating-connection-is-in-progress",
+      "title": "Add user-facing error and progress feedback for wallet connections: when `wallet.connect(...)` fails or a request is pending/rejected, show an English toast and/or inline message and reflect `wallet.isConnecting` by disabling relevant connect UI elements and indicating connection is in progress.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
     }
   ],
-  "projectName": "Update Spades Quick Play to play to 500 points",
+  "new_feature_requests": [],
+  "projectName": "Fix unresponsive Connect Wallet flow (WalletConnect modal, install prompt, and error feedback)",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

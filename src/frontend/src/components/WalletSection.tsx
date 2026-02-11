@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { TrendingUp, Trophy, Activity, Info, Wifi, Percent, ArrowDownToLine, ArrowUpFromLine, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { GameMode } from '../App';
+import type { GameMode } from '../App';
 import { useWeb3Wallet } from '../hooks/useWeb3Wallet';
 import { useGetCallerProfile, useGetTransactionHistory, useGetHouseCutPercent, useCheckBalance } from '../hooks/useQueries';
 import DepositWithdrawModal from './DepositWithdrawModal';
@@ -47,7 +47,7 @@ export default function WalletSection({ gameMode }: WalletSectionProps) {
 
   // Load offline stats
   useEffect(() => {
-    if (gameMode === 'fun') {
+    if (gameMode === 'forFun') {
       const stored = localStorage.getItem('offlinePlayerStats');
       if (stored) {
         setOfflineStats(JSON.parse(stored));
@@ -100,23 +100,23 @@ export default function WalletSection({ gameMode }: WalletSectionProps) {
   };
 
   // Determine which data to display
-  const balance = gameMode === 'real' && currentBalance !== undefined
+  const balance = gameMode === 'forReal' && currentBalance !== undefined
     ? (Number(currentBalance) / 1e18).toFixed(4)
     : offlineStats 
     ? (offlineStats.currentBalance / 1e18).toFixed(4) 
     : '10.0000';
 
-  const totalWinnings = gameMode === 'real' && onlineProfile
+  const totalWinnings = gameMode === 'forReal' && onlineProfile
     ? (Number(onlineProfile.totalWinnings) / 1e18).toFixed(4)
     : offlineStats 
     ? (offlineStats.totalWinnings / 1e18).toFixed(4) 
     : '0.0000';
 
-  const gamesPlayed = gameMode === 'real' && onlineProfile
+  const gamesPlayed = gameMode === 'forReal' && onlineProfile
     ? Number(onlineProfile.playerStats.gamesPlayed)
     : offlineStats?.gamesPlayed || 0;
 
-  const gamesWon = gameMode === 'real' && onlineProfile
+  const gamesWon = gameMode === 'forReal' && onlineProfile
     ? Number(onlineProfile.playerStats.gamesWon)
     : offlineStats?.gamesWon || 0;
 
@@ -124,7 +124,7 @@ export default function WalletSection({ gameMode }: WalletSectionProps) {
     ? ((gamesWon / gamesPlayed) * 100).toFixed(1) 
     : '0.0';
 
-  const transactions = gameMode === 'real' && onlineTransactions
+  const transactions = gameMode === 'forReal' && onlineTransactions
     ? onlineTransactions.map(tx => ({
         txId: tx.txId,
         txType: getEnumValue(tx.txType) as 'deposit' | 'wager' | 'winnings' | 'withdrawal',
@@ -134,14 +134,14 @@ export default function WalletSection({ gameMode }: WalletSectionProps) {
       }))
     : offlineStats?.transactions || [];
 
-  const displayAddress = gameMode === 'real' && wallet.address
+  const displayAddress = gameMode === 'forReal' && wallet.address
     ? wallet.address
     : guestAddress;
 
   const currentHouseCut = houseCutPercent ? Number(houseCutPercent) : 5;
 
   // Determine if buttons should be enabled - wallet must be connected
-  const isRealMode = gameMode === 'real';
+  const isRealMode = gameMode === 'forReal';
   const buttonsEnabled = isRealMode && wallet.isConnected;
 
   const handleDepositClick = () => {
@@ -187,19 +187,19 @@ export default function WalletSection({ gameMode }: WalletSectionProps) {
               </span>
             </h2>
             <p className="text-muted-foreground mt-1">
-              {gameMode === 'real' ? 'Manage your on-chain balance and view your stats' : 'View your offline game statistics'}
+              {gameMode === 'forReal' ? 'Manage your on-chain balance and view your stats' : 'View your offline game statistics'}
             </p>
           </div>
-          {gameMode === 'real' && (
-            <Badge variant="outline" className="gap-2 px-3 py-1.5">
-              <Wifi className="h-3 w-3" />
-              <span className="font-semibold">Live Network</span>
+          {gameMode === 'forReal' && (
+            <Badge variant="default" className="bg-green-600 gap-2">
+              <Wifi className="w-3 h-3" />
+              Live Network
             </Badge>
           )}
         </div>
 
         {/* Balance Card */}
-        <Card className="border-2 border-primary/30 bg-gradient-to-br from-card to-primary/5">
+        <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <img 
@@ -207,215 +207,221 @@ export default function WalletSection({ gameMode }: WalletSectionProps) {
                 alt="Balance" 
                 className="w-6 h-6"
               />
-              Current Balance
+              {gameMode === 'forReal' ? 'Your on-chain balance on Base network' : 'Your offline play balance'}
             </CardTitle>
             <CardDescription>
-              {gameMode === 'real' ? 'Your on-chain balance on Base network' : 'Your offline play balance'}
+              Available funds for wagering
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-baseline gap-2">
-              <span className="text-5xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-                {balance}
-              </span>
-              <span className="text-2xl text-muted-foreground font-semibold">ETH</span>
-            </div>
-            
-            {gameMode === 'real' && (
-              <div className="flex flex-wrap gap-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <Button
-                        onClick={handleDepositClick}
-                        disabled={!buttonsEnabled}
-                        className="gap-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <ArrowDownToLine className="h-4 w-4" />
-                        Deposit
-                      </Button>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{depositTooltip}</p>
-                  </TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <Button
-                        onClick={handleWithdrawClick}
-                        disabled={!buttonsEnabled}
-                        variant="outline"
-                        className="gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <ArrowUpFromLine className="h-4 w-4" />
-                        Withdraw
-                      </Button>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{withdrawTooltip}</p>
-                  </TooltipContent>
-                </Tooltip>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="text-4xl font-bold text-primary">
+                {balance} ETH
               </div>
-            )}
+              
+              {gameMode === 'forReal' && (
+                <div className="flex gap-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex-1">
+                        <Button
+                          onClick={handleDepositClick}
+                          disabled={!buttonsEnabled}
+                          className="w-full gap-2 bg-green-600 hover:bg-green-700"
+                        >
+                          <ArrowDownToLine className="w-4 h-4" />
+                          Deposit
+                        </Button>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{depositTooltip}</p>
+                    </TooltipContent>
+                  </Tooltip>
 
-            {gameMode === 'real' && !wallet.isConnected && (
-              <Alert className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/30">
-                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                <AlertDescription className="text-amber-600 dark:text-amber-400">
-                  <strong>Wallet not connected.</strong> Connect your wallet to deposit or withdraw funds.
-                </AlertDescription>
-              </Alert>
-            )}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex-1">
+                        <Button
+                          onClick={handleWithdrawClick}
+                          disabled={!buttonsEnabled}
+                          variant="outline"
+                          className="w-full gap-2"
+                        >
+                          <ArrowUpFromLine className="w-4 h-4" />
+                          Withdraw
+                        </Button>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{withdrawTooltip}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              )}
 
-            <div className="pt-2 border-t border-border">
-              <div className="text-xs text-muted-foreground">
-                <strong>Wallet Address:</strong>
-                <div className="font-mono mt-1 break-all">{displayAddress}</div>
+              {gameMode === 'forReal' && !wallet.isConnected && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Connect your wallet to deposit or withdraw funds
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <div className="pt-4 border-t space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Wallet Address:</span>
+                  <span className="font-mono text-xs">
+                    {displayAddress.slice(0, 6)}...{displayAddress.slice(-4)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    House Cut:
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Info className="w-3 h-3" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Platform fee taken from winnings</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </span>
+                  <span className="font-semibold flex items-center gap-1">
+                    <Percent className="w-3 h-3" />
+                    {currentHouseCut}%
+                  </span>
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Stats Grid */}
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid md:grid-cols-3 gap-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Winnings</CardTitle>
-              <TrendingUp className="h-4 w-4 text-green-500" />
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-green-500" />
+                Total Winnings
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-500">{totalWinnings} ETH</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Lifetime earnings
-              </p>
+              <div className="text-2xl font-bold text-green-500">
+                {totalWinnings} ETH
+              </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Games Won</CardTitle>
-              <Trophy className="h-4 w-4 text-yellow-500" />
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Activity className="w-4 h-4 text-blue-500" />
+                Games Played
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{gamesWon}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Out of {gamesPlayed} games played
-              </p>
+              <div className="text-2xl font-bold">
+                {gamesPlayed}
+              </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Win Rate</CardTitle>
-              <Activity className="h-4 w-4 text-primary" />
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Trophy className="w-4 h-4 text-yellow-500" />
+                Win Rate
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{winRate}%</div>
+              <div className="text-2xl font-bold">
+                {winRate}%
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Success rate
+                {gamesWon} wins
               </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* House Cut Info */}
-        {gameMode === 'real' && (
-          <Card className="border-accent/30">
+        {/* Transaction History */}
+        {gameMode === 'forReal' && (
+          <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-sm">
-                <Percent className="h-4 w-4" />
-                Platform Fee
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Info className="h-4 w-4 text-muted-foreground" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>The platform takes a small percentage of each wager to maintain the service</p>
-                  </TooltipContent>
-                </Tooltip>
+              <CardTitle className="flex items-center gap-2">
+                <img 
+                  src="/assets/generated/transaction-history-bg.dim_400x200.png" 
+                  alt="Transactions" 
+                  className="w-6 h-6"
+                />
+                Transaction History
               </CardTitle>
+              <CardDescription>
+                {gameMode === 'forReal' ? 'Your recent on-chain transactions' : 'Your offline game transactions'}
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-accent">{currentHouseCut}%</span>
-                <span className="text-sm text-muted-foreground">per wager</span>
-              </div>
+              {transactions.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p className="text-sm">
+                    {gameMode === 'forReal' ? 'Start playing to see your transaction history' : 'Play some games to build your history'}
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Date</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {transactions.slice(0, 10).map((tx) => (
+                        <TableRow key={tx.txId}>
+                          <TableCell className="font-medium">
+                            {getTxTypeLabel(tx.txType)}
+                          </TableCell>
+                          <TableCell>
+                            {(tx.amount / 1e18).toFixed(4)} ETH
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={getStatusVariant(tx.status)}>
+                              {tx.status === 'completed' && <CheckCircle2 className="w-3 h-3 mr-1" />}
+                              {tx.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {formatDate(tx.timestamp)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
-
-        {/* Transaction History */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Transaction History</CardTitle>
-            <CardDescription>
-              {gameMode === 'real' ? 'Your recent on-chain transactions' : 'Your offline game transactions'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {transactions.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Activity className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>No transactions yet</p>
-                <p className="text-sm mt-1">
-                  {gameMode === 'real' ? 'Start playing to see your transaction history' : 'Play some games to build your history'}
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Date</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {transactions.slice(0, 10).map((tx) => (
-                      <TableRow key={tx.txId}>
-                        <TableCell className="font-medium">
-                          {getTxTypeLabel(tx.txType)}
-                        </TableCell>
-                        <TableCell>
-                          {(tx.amount / 1e18).toFixed(4)} ETH
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={getStatusVariant(tx.status)}>
-                            {tx.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {formatDate(tx.timestamp)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Modals */}
-        <DepositWithdrawModal
-          open={depositModalOpen}
-          onOpenChange={setDepositModalOpen}
-          mode="deposit"
-          walletBalance={walletBalance}
-        />
-        <DepositWithdrawModal
-          open={withdrawModalOpen}
-          onOpenChange={setWithdrawModalOpen}
-          mode="withdraw"
-          walletBalance={walletBalance}
-        />
       </div>
+
+      <DepositWithdrawModal
+        open={depositModalOpen}
+        onOpenChange={setDepositModalOpen}
+        mode="deposit"
+        walletBalance={walletBalance}
+      />
+
+      <DepositWithdrawModal
+        open={withdrawModalOpen}
+        onOpenChange={setWithdrawModalOpen}
+        mode="withdraw"
+        walletBalance={walletBalance}
+      />
     </TooltipProvider>
   );
 }

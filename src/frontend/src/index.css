@@ -4,39 +4,52 @@
 
 @layer base {
   :root {
-    /* Dark theme with vibrant purple/blue colors - OKLCH format */
-    --background: 0.2 0.05 265;
-    --foreground: 0.98 0.01 265;
-    --card: 0.25 0.05 265;
-    --card-foreground: 0.98 0.01 265;
-    --popover: 0.2 0.05 265;
-    --popover-foreground: 0.98 0.01 265;
-    
-    /* Vibrant purple primary */
-    --primary: 0.6 0.25 290;
-    --primary-foreground: 0.98 0.01 265;
-    
-    --secondary: 0.3 0.05 265;
-    --secondary-foreground: 0.98 0.01 265;
-    --muted: 0.3 0.05 265;
-    --muted-foreground: 0.65 0.02 265;
-    
-    /* Vibrant blue accent */
-    --accent: 0.65 0.2 250;
-    --accent-foreground: 0.98 0.01 265;
-    
-    --destructive: 0.6 0.25 25;
-    --destructive-foreground: 0.98 0.01 265;
-    --border: 0.35 0.05 265;
-    --input: 0.3 0.05 265;
-    --ring: 0.6 0.25 290;
-    
+    --background: 98% 0.01 264;
+    --foreground: 20% 0.02 264;
+    --card: 100% 0 0;
+    --card-foreground: 20% 0.02 264;
+    --popover: 100% 0 0;
+    --popover-foreground: 20% 0.02 264;
+    --primary: 55% 0.22 264;
+    --primary-foreground: 98% 0.01 264;
+    --secondary: 92% 0.02 264;
+    --secondary-foreground: 20% 0.02 264;
+    --muted: 94% 0.01 264;
+    --muted-foreground: 50% 0.02 264;
+    --accent: 92% 0.02 264;
+    --accent-foreground: 20% 0.02 264;
+    --destructive: 55% 0.22 20;
+    --destructive-foreground: 98% 0.01 264;
+    --border: 88% 0.01 264;
+    --input: 88% 0.01 264;
+    --ring: 55% 0.22 264;
     --radius: 0.5rem;
-    --chart-1: 0.6 0.2 250;
-    --chart-2: 0.55 0.18 160;
-    --chart-3: 0.65 0.22 50;
-    --chart-4: 0.65 0.2 300;
-    --chart-5: 0.6 0.22 350;
+    --success: 60% 0.18 145;
+    --warning: 70% 0.18 60;
+  }
+
+  .dark {
+    --background: 15% 0.02 264;
+    --foreground: 95% 0.01 264;
+    --card: 18% 0.02 264;
+    --card-foreground: 95% 0.01 264;
+    --popover: 18% 0.02 264;
+    --popover-foreground: 95% 0.01 264;
+    --primary: 65% 0.20 264;
+    --primary-foreground: 15% 0.02 264;
+    --secondary: 25% 0.02 264;
+    --secondary-foreground: 95% 0.01 264;
+    --muted: 25% 0.02 264;
+    --muted-foreground: 65% 0.02 264;
+    --accent: 25% 0.02 264;
+    --accent-foreground: 95% 0.01 264;
+    --destructive: 55% 0.22 20;
+    --destructive-foreground: 95% 0.01 264;
+    --border: 30% 0.02 264;
+    --input: 30% 0.02 264;
+    --ring: 65% 0.20 264;
+    --success: 60% 0.18 145;
+    --warning: 70% 0.18 60;
   }
 }
 
@@ -51,58 +64,9 @@
 }
 
 @layer utilities {
-  .touch-manipulation {
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent;
   }
-  
-  @keyframes pulse-subtle {
-    0%, 100% {
-      opacity: 1;
-      transform: scale(1);
-    }
-    50% {
-      opacity: 0.95;
-      transform: scale(1.02);
-    }
-  }
-  
-  .animate-pulse-subtle {
-    animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-
-  @keyframes glow {
-    0%, 100% {
-      box-shadow: 0 0 20px rgba(34, 197, 94, 0.5);
-    }
-    50% {
-      box-shadow: 0 0 30px rgba(34, 197, 94, 0.8);
-    }
-  }
-
-  .animate-glow {
-    animation: glow 2s ease-in-out infinite;
-  }
-}
-
-/* Mobile touch optimization */
-button {
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-
-button:active:not(:disabled) {
-  transform: scale(0.98);
-}
-
-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-/* Smooth transitions */
-button, a, input, select, textarea {
-  transition: all 0.15s ease-in-out;
 }
 
 /* Custom scrollbar */
@@ -112,114 +76,114 @@ button, a, input, select, textarea {
 }
 
 ::-webkit-scrollbar-track {
-  background: oklch(var(--background));
+  background: oklch(var(--muted));
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: oklch(var(--primary));
+  background: oklch(var(--muted-foreground) / 0.3);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.65 0.25 290);
-}
-
-/* Vibrant selection */
-::selection {
-  background: rgba(138, 43, 226, 0.3);
-  color: oklch(var(--foreground));
-}
-
-/* Card gradient utility */
-.card-gradient {
-  background: linear-gradient(135deg, oklch(var(--card)) 0%, oklch(var(--muted)) 100%);
-}
-
-/* Gradient text utility */
-.gradient-text {
-  background: linear-gradient(135deg, oklch(0.6 0.25 290) 0%, oklch(0.65 0.2 250) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  background: oklch(var(--muted-foreground) / 0.5);
 }
 
 /* Playing card styles */
 .playing-card {
-  aspect-ratio: 2.5 / 3.5;
-  border-radius: 0.5rem;
+  @apply flex items-center justify-center font-bold rounded-lg border-2 shadow-md transition-all;
   background: white;
-  border: 2px solid oklch(var(--border));
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  user-select: none;
+  border-color: #333;
 }
 
-.playing-card:hover:not(.disabled) {
-  transform: translateY(-8px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
-}
-
-.playing-card.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.playing-card.selected {
-  transform: translateY(-12px);
-  box-shadow: 0 0 20px oklch(var(--primary));
-  border-color: oklch(var(--primary));
-}
-
-.card-red {
+.playing-card.card-red {
   color: #dc2626;
 }
 
-.card-black {
+.playing-card.card-black {
   color: #1f2937;
 }
 
-/* Poker table styles */
-.poker-table {
-  background: radial-gradient(ellipse at center, oklch(0.35 0.1 140) 0%, oklch(0.25 0.08 140) 100%);
-  border: 8px solid oklch(0.3 0.05 265);
-  border-radius: 50%;
+.playing-card.card-revealed {
+  animation: cardReveal 0.3s ease-out;
 }
 
-/* Chip stack styles */
-.chip {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 3px solid white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  font-size: 0.75rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+@keyframes cardReveal {
+  from {
+    transform: rotateY(90deg);
+    opacity: 0;
+  }
+  to {
+    transform: rotateY(0deg);
+    opacity: 1;
+  }
 }
 
-.chip-red {
-  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
-  color: white;
+/* Card back styles for unrevealed community cards */
+.card-back {
+  @apply flex items-center justify-center rounded-lg border-2 shadow-md;
+  background: linear-gradient(135deg, 
+    oklch(40% 0.08 264) 0%, 
+    oklch(30% 0.06 264) 50%, 
+    oklch(40% 0.08 264) 100%);
+  border-color: oklch(50% 0.10 264);
+  position: relative;
+  overflow: hidden;
 }
 
-.chip-blue {
-  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-  color: white;
+.card-back-pattern {
+  width: 100%;
+  height: 100%;
+  background-image: 
+    repeating-linear-gradient(45deg, 
+      transparent, 
+      transparent 10px, 
+      oklch(45% 0.09 264 / 0.3) 10px, 
+      oklch(45% 0.09 264 / 0.3) 20px);
+  position: absolute;
+  top: 0;
+  left: 0;
 }
 
-.chip-green {
-  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
-  color: white;
+.dark .card-back {
+  background: linear-gradient(135deg, 
+    oklch(25% 0.06 264) 0%, 
+    oklch(20% 0.04 264) 50%, 
+    oklch(25% 0.06 264) 100%);
+  border-color: oklch(35% 0.08 264);
 }
 
-.chip-black {
-  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-  color: white;
+.dark .card-back-pattern {
+  background-image: 
+    repeating-linear-gradient(45deg, 
+      transparent, 
+      transparent 10px, 
+      oklch(30% 0.07 264 / 0.3) 10px, 
+      oklch(30% 0.07 264 / 0.3) 20px);
+}
+
+/* Omaha game theme wrapper */
+.omaha-game-wrapper {
+  @apply relative;
+}
+
+.omaha-game-wrapper .omaha-board-card {
+  @apply bg-gradient-to-br from-green-800/20 to-green-900/20 border-green-700/30;
+}
+
+.dark .omaha-game-wrapper .omaha-board-card {
+  @apply bg-gradient-to-br from-green-900/30 to-green-950/30 border-green-800/40;
+}
+
+.omaha-board-container {
+  @apply p-4 rounded-lg;
+  background: linear-gradient(135deg, 
+    oklch(35% 0.12 145 / 0.15) 0%, 
+    oklch(30% 0.10 145 / 0.20) 100%);
+}
+
+.dark .omaha-board-container {
+  background: linear-gradient(135deg, 
+    oklch(25% 0.10 145 / 0.20) 0%, 
+    oklch(20% 0.08 145 / 0.25) 100%);
 }

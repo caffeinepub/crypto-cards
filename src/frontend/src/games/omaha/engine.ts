@@ -32,10 +32,10 @@ export function initializeGame(playerName: string, seed: number = Date.now()): O
   const deck = shuffleDeck(createDeck(), seed);
   
   const players: Player[] = [
-    { id: 'player', name: playerName, holeCards: [], chips: 1000, currentBet: 0, folded: false, isBot: false },
-    { id: 'bot1', name: 'Bot 1', holeCards: [], chips: 1000, currentBet: 0, folded: false, isBot: true },
-    { id: 'bot2', name: 'Bot 2', holeCards: [], chips: 1000, currentBet: 0, folded: false, isBot: true },
-    { id: 'bot3', name: 'Bot 3', holeCards: [], chips: 1000, currentBet: 0, folded: false, isBot: true },
+    { id: 'player', name: playerName, holeCards: [], chips: 1000, currentBet: 0, folded: false, isBot: false, hasActedThisStreet: false },
+    { id: 'bot1', name: 'Bot 1', holeCards: [], chips: 1000, currentBet: 0, folded: false, isBot: true, hasActedThisStreet: false },
+    { id: 'bot2', name: 'Bot 2', holeCards: [], chips: 1000, currentBet: 0, folded: false, isBot: true, hasActedThisStreet: false },
+    { id: 'bot3', name: 'Bot 3', holeCards: [], chips: 1000, currentBet: 0, folded: false, isBot: true, hasActedThisStreet: false },
   ];
   
   let cardIndex = 0;
@@ -58,6 +58,7 @@ export function initializeGame(playerName: string, seed: number = Date.now()): O
     gameOver: false,
     winner: null,
     winningHand: null,
+    lastRaiserIndex: undefined,
   };
 }
 
@@ -80,7 +81,8 @@ export function performAction(
   amount?: number
 ): OmahaGameState {
   let newState = JSON.parse(JSON.stringify(state)) as OmahaGameState;
-  const player = newState.players.find(p => p.id === playerId);
+  const playerIndex = newState.players.findIndex(p => p.id === playerId);
+  const player = newState.players[playerIndex];
   
   if (!player) throw new Error('Player not found');
   if (player.folded) throw new Error('Player already folded');
@@ -88,12 +90,14 @@ export function performAction(
   switch (action) {
     case 'fold':
       player.folded = true;
+      player.hasActedThisStreet = true;
       break;
       
     case 'check':
       if (!canCheck(state, playerId)) {
         throw new Error('Cannot check - must call or fold');
       }
+      player.hasActedThisStreet = true;
       break;
       
     case 'call':
@@ -101,18 +105,40 @@ export function performAction(
         throw new Error('Cannot call');
       }
       const callAmount = newState.currentBet - player.currentBet;
+      if (callAmount > player.chips) {
+        throw new Error('Not enough chips to call');
+      }
       player.chips -= callAmount;
       player.currentBet = newState.currentBet;
       newState.pot += callAmount;
+      player.hasActedThisStreet = true;
       break;
       
     case 'bet':
       if (!amount || amount <= 0) throw new Error('Invalid bet amount');
-      const betAmount = amount;
-      player.chips -= betAmount;
-      player.currentBet += betAmount;
-      newState.currentBet = Math.max(newState.currentBet, player.currentBet);
-      newState.pot += betAmount;
+      
+      // Treat amount as "raise to" total for this street
+      const raiseToAmount = amount;
+      const contributed = raiseToAmount - player.currentBet;
+      
+      if (contributed <= 0) throw new Error('Bet must be higher than current bet');
+      if (contributed > player.chips) throw new Error('Not enough chips');
+      
+      player.chips -= contributed;
+      player.currentBet = raiseToAmount;
+      newState.pot += contributed;
+      newState.currentBet = Math.max(newState.currentBet, raiseToAmount);
+      player.hasActedThisStreet = true;
+      
+      // Mark this player as the last raiser
+      newState.lastRaiserIndex = playerIndex;
+      
+      // Reset hasActedThisStreet for all other active players (they need to respond to the raise)
+      newState.players.forEach((p, idx) => {
+        if (idx !== playerIndex && !p.folded) {
+          p.hasActedThisStreet = false;
+        }
+      });
       break;
   }
   
@@ -137,18 +163,30 @@ function getNextActivePlayer(state: OmahaGameState, currentIndex: number): numbe
 
 function isBettingRoundComplete(state: OmahaGameState): boolean {
   const activePlayers = state.players.filter(p => !p.folded);
+  
+  // Only one player left
   if (activePlayers.length === 1) return true;
   
+  // All active players must have acted this street
+  const allHaveActed = activePlayers.every(p => p.hasActedThisStreet);
+  if (!allHaveActed) return false;
+  
+  // All active players must have matching bets
   const allBetsEqual = activePlayers.every(p => p.currentBet === state.currentBet);
+  
   return allBetsEqual;
 }
 
 function advanceStreet(state: OmahaGameState): OmahaGameState {
   const newState = { ...state };
   
-  // Reset bets
-  newState.players.forEach(p => { p.currentBet = 0; });
+  // Reset bets and action tracking for new street
+  newState.players.forEach(p => { 
+    p.currentBet = 0;
+    p.hasActedThisStreet = false;
+  });
   newState.currentBet = 0;
+  newState.lastRaiserIndex = undefined;
   
   // Check for single winner
   const activePlayers = newState.players.filter(p => !p.folded);

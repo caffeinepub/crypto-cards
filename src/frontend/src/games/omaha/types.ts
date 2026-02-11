@@ -17,6 +17,7 @@ export interface Player {
   currentBet: number;
   folded: boolean;
   isBot: boolean;
+  hasActedThisStreet?: boolean;
 }
 
 export interface OmahaGameState {
@@ -30,6 +31,7 @@ export interface OmahaGameState {
   gameOver: boolean;
   winner: string | null;
   winningHand: string | null;
+  lastRaiserIndex?: number;
 }
 
 export function cardToString(card: Card): string {
