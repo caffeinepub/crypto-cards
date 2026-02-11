@@ -1,13 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Restore the app’s stable dark card-game UI theme and make Quick Play for Spades and Pot Limit Omaha actually playable end-to-end without stuck or broken game states.
+**Goal:** Update Spades Quick Play so games play across multiple hands and end when a player reaches 500+ total points.
 
 **Planned changes:**
-- Remove/refactor global CSS overrides that break Shadcn/Tailwind component styling while keeping a coherent dark card-game aesthetic.
-- Fix layout/styling regressions so core UI surfaces (header, tabs, cards, buttons, modals) render consistently on mobile and desktop without overlap or unclickable elements.
-- Implement functional Quick Play game loops for Spades and Pot Limit Omaha (4-card), replacing any “Coming Soon”/placeholder gameplay with interactive state-driven UI.
-- Wire the Quick Play frontend to deterministic game/session backend APIs (adding/adjusting backend endpoints as needed) so actions always return updated state, invalid actions return clear English errors, and the game does not deadlock.
-- Ensure exiting a Quick Play game reliably returns the user to the “Game Lobbies” tab.
+- Change Quick Play end-of-game logic to trigger game over only when at least one player has 500+ total points after a completed hand.
+- Implement per-hand scoring (based on each player’s bid and tricks won) and maintain persistent total scores across hands within the same Quick Play session.
+- Update the UI to show each player’s running total score and display the win target (e.g., "Target: 500").
+- When a hand ends and no player has reached 500, automatically start a new hand (fresh deal; reset bids/tricks/spadesBroken/current trick).
+- Define deterministic winner selection when multiple players reach 500+ in the same hand (e.g., highest total points; deterministic tie handling).
 
-**User-visible outcome:** The app looks consistent again across tabs and devices, and users can start Quick Play Spades or Pot Limit Omaha, play through a basic hand/game with working actions and outcomes, then exit back to Game Lobbies without refreshing.
+**User-visible outcome:** Players can play Spades Quick Play as a full game to 500 points, see running total scores and the 500-point target, and continue seamlessly into new hands until the game ends at 500+.

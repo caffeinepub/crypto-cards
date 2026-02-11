@@ -1,87 +1,25 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-11T15:24:34.398Z",
-  "summary": "The diff substantially implements a local/offline Quick Play game loop for Spades and Omaha (new engines, bots, session hook, and UI), and updates global CSS theme. However, the Quick Play flow does not appear to be wired to backend game/session APIs as required, and backend-side deterministic session/action APIs are not evidenced. Several additional changes (wallet provider support, actor retry logic, admin/status plumbing) are introduced beyond the stated requirements.",
-  "missing_requirements": [
-    {
-      "id": "REQ-3",
-      "requirement": "Ensure the frontend Quick Play flow is correctly wired to whatever backend game/session APIs exist (or add the required backend APIs) so the game state is deterministic and does not get stuck.",
-      "reason": "Quick Play is implemented entirely with frontend-local state (session creation, actions, bots) and does not show any backend session creation/action API usage or additions. backend/main.mo changes shown are unrelated to game session APIs, and no new backend endpoints for Quick Play are evidenced.",
-      "evidence": [
-        "frontend/src/hooks/useQuickPlaySession.ts",
-        "frontend/src/games/session/quickPlaySession.ts",
-        "frontend/src/components/QuickPlayGame.tsx",
-        "backend/main.mo"
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "requirement": "Pot Limit Omaha Quick Play includes revealing flop/turn/river in order, basic betting actions vs bots, and end-of-hand resolution (show winner).",
-      "reason": "Betting actions and bot actions are present, but key parts needed to confirm a complete end-to-end loop (street advancement correctness, showdown resolution, and winner display) are in truncated sections of the engine/UI, so the full acceptance criteria cannot be verified from the provided diff summary.",
-      "evidence": [
-        "frontend/src/games/omaha/engine.ts",
-        "frontend/src/games/omaha/handEvaluator.ts",
-        "frontend/src/components/QuickPlayGame.tsx"
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "requirement": "Spades Quick Play includes trick resolution and a simple scoring/win condition.",
-      "reason": "Dealing, legality checks, and playing cards are shown, but the trick-winner resolution, scoring, and win condition appear in truncated code, so the complete required loop cannot be verified from the diff summary.",
-      "evidence": [
-        "frontend/src/games/spades/engine.ts",
-        "frontend/src/components/QuickPlayGame.tsx"
-      ]
-    }
-  ],
+  "generatedAt": "2026-02-11T16:25:15.866Z",
+  "summary": "Diff adds Spades multi-hand scoring utilities (target=500, hand scoring, winner determination), extends Spades state to track persistent totalScore/handNumber, and updates the Spades engine/UI to support a 500-point target flow. Due to truncation of key modified files, some acceptance-criteria behaviors (auto-starting new hands and game-over gating) cannot be fully verified from provided evidence.",
+  "missing_requirements": [],
   "hallucinated_features": [
     {
-      "description": "Expanded Web3 wallet support (Coinbase Wallet, MetaMask, WalletConnect) and related UI/logic changes.",
-      "reason": "Not requested by REQ-1/2/3 and outside the described scope of fixing UI regression and making Quick Play playable.",
+      "description": "Introduced a `RENEGE_PENALTY` constant in Spades scoring module that is not requested by the BuildRequest.",
+      "reason": "BuildRequest focuses on playing to 500 points and implementing hand/total scoring; it does not mention adding or changing renege penalty constants.",
       "evidence": [
-        "frontend-file-summaries.txt (frontend/src/hooks/useWeb3Wallet.ts)",
-        "frontend-file-summaries.txt (frontend/src/components/WalletInstallModal.tsx)",
-        "frontend-file-summaries.txt (frontend/src/components/Header.tsx)"
-      ]
-    },
-    {
-      "description": "Actor initialization continuous retry logic and additional backend connectivity tracking hooks.",
-      "reason": "Not requested by REQ-1/2/3; introduces broader connectivity/retry behavior beyond making Quick Play functional.",
-      "evidence": [
-        "frontend-file-summaries.txt (frontend/src/hooks/useActor.ts)",
-        "frontend-file-summaries.txt (frontend/src/hooks/useActorWithRetry.ts)"
-      ]
-    },
-    {
-      "description": "Various non-Quick-Play feature adjustments (admin settings wiring, wallet section prop fix, tournament/lobby placeholders).",
-      "reason": "Not requested by REQ-1/2/3; these are broader app changes unrelated to the specified Quick Play playability and CSS regression goals.",
-      "evidence": [
-        "frontend-file-summaries.txt (frontend/src/components/AdminSettings.tsx)",
-        "frontend-file-summaries.txt (frontend/src/components/WalletSection.tsx)",
-        "frontend-file-summaries.txt (frontend/src/components/TournamentSection.tsx)",
-        "frontend-file-summaries.txt (frontend/src/components/LobbyRoom.tsx)"
+        "frontend/src/games/spades/scoring.ts"
       ]
     }
   ],
-  "confidence": 0.68,
+  "confidence": 0.62,
   "changed_files": [
-    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/App.tsx",
-    "frontend/src/components/LobbyBrowser.tsx",
-    "frontend/src/components/ProfileSetupModal.tsx",
     "frontend/src/components/QuickPlayGame.tsx",
-    "frontend/src/games/omaha/bots.ts",
-    "frontend/src/games/omaha/engine.ts",
-    "frontend/src/games/omaha/handEvaluator.ts",
-    "frontend/src/games/omaha/types.ts",
-    "frontend/src/games/session/quickPlaySession.ts",
-    "frontend/src/games/spades/bots.ts",
     "frontend/src/games/spades/engine.ts",
+    "frontend/src/games/spades/scoring.ts",
     "frontend/src/games/spades/types.ts",
-    "frontend/src/hooks/useQuickPlaySession.ts",
-    "frontend/src/index.css",
     "project_state.json"
   ]
 }

@@ -12,12 +12,23 @@ export interface Player {
   hand: Card[];
   tricksWon: number;
   isBot: boolean;
+  bid: number | null;
+  totalScore: number; // Persistent score across hands
+  handScore: number; // Score from current/last completed hand
+  lastHandScore: number; // Score from previous hand (for display)
 }
 
 export interface Trick {
   leadSuit: Suit | null;
   cards: Array<{ playerId: string; card: Card }>;
   winner: string | null;
+}
+
+export interface RenegePenalty {
+  playerId: string;
+  playerName: string;
+  trickNumber: number;
+  message: string;
 }
 
 export interface SpadesGameState {
@@ -28,6 +39,10 @@ export interface SpadesGameState {
   spadesBroken: boolean;
   gameOver: boolean;
   winner: string | null;
+  renegePenalties: RenegePenalty[];
+  biddingPhase: boolean;
+  biddingComplete: boolean;
+  handNumber: number; // Track which hand we're on
 }
 
 export function cardToString(card: Card): string {

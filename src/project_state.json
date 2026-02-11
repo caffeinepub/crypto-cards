@@ -4,37 +4,36 @@
   "summary": "New project",
   "architectural_notes": [],
   "known_issues": [
-    "Latest deployed version reportedly broke the visual look and the game is still not functioning."
+    "Spades game may be using an incorrect end-game score (should be 500 points)."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-restore-the-app-s-visual-look-to-a-stable-consistent-theme-by-removing-or-refactoring-any-global-css-overrides-that-break-shadcn-tailwind-component-styling-e-g-excessive-important-utility-redefinitions-global-element-overrides-while-preserving-a-coherent-dark-card-game-aesthetic",
-      "title": "Restore the app’s visual look to a stable, consistent theme by removing or refactoring any global CSS overrides that break Shadcn/Tailwind component styling (e.g., excessive `!important` utility redefinitions, global element overrides) while preserving a coherent dark card-game aesthetic.",
+      "id": "feature-update-the-spades-quick-play-game-rules-so-that-a-full-spades-game-ends-when-a-player-reaches-or-exceeds-500-total-points-rather-than-ending-after-a-single-13-trick-hand",
+      "title": "Update the Spades Quick Play game rules so that a full Spades game ends when a player reaches (or exceeds) 500 total points, rather than ending after a single 13-trick hand.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-make-quick-play-actually-start-a-working-game-not-a-placeholder-for-both-spades-and-pot-limit-omaha-4-card-so-the-user-can-play-a-basic-end-to-end-game-loop-start-game-see-cards-state-take-actions-plays-see-outcome-winner-exit-back-to-lobbies",
-      "title": "Make “Quick Play” actually start a working game (not a placeholder) for both Spades and Pot Limit Omaha (4-card) so the user can play a basic end-to-end game loop (start game → see cards/state → take actions/plays → see outcome/winner → exit back to lobbies).",
+      "id": "feature-implement-spades-hand-scoring-and-persistent-per-player-total-score-across-hands-within-the-same-quick-play-session-including-showing-the-current-target-of-500-points-in-the-ui",
+      "title": "Implement Spades hand scoring and persistent per-player total score across hands within the same Quick Play session, including showing the current target of 500 points in the UI.",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
-    },
-    {
-      "id": "feature-ensure-the-frontend-quick-play-flow-is-correctly-wired-to-whatever-backend-game-session-apis-exist-or-add-the-required-backend-apis-so-the-game-state-is-deterministic-and-does-not-get-stuck-e-g-no-dead-turns-no-missing-state-transitions-no-silent-failures",
-      "title": "Ensure the frontend Quick Play flow is correctly wired to whatever backend game/session APIs exist (or add the required backend APIs) so the game state is deterministic and does not get stuck (e.g., no dead turns, no missing state transitions, no silent failures).",
-      "reqIds": [
-        "REQ-3"
-      ],
-      "version": 1
     }
   ],
-  "new_feature_requests": [],
-  "projectName": "Fix UI regression and make Quick Play card games actually playable",
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Update Spades game scoring target so games end at 500 points",
+      "reqIds": [],
+      "status": "pending"
+    }
+  ],
+  "projectName": "Update Spades Quick Play to play to 500 points",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }
