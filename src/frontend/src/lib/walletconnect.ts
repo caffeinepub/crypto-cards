@@ -22,15 +22,44 @@ class WalletConnectClient {
   private client: any = null;
   private session: any = null;
   private config: WalletConnectConfig;
+  private initPromise: Promise<void> | null = null;
+  private isInitialized: boolean = false;
 
   constructor(config: WalletConnectConfig) {
     this.config = config;
   }
 
   async initialize(): Promise<void> {
-    if (this.client) return;
+    // Return existing initialization promise if already in progress
+    if (this.initPromise) {
+      return this.initPromise;
+    }
 
+    // Return immediately if already initialized
+    if (this.isInitialized && this.client) {
+      return Promise.resolve();
+    }
+
+    // Create new initialization promise
+    this.initPromise = this._doInitialize();
+    
     try {
+      await this.initPromise;
+      this.isInitialized = true;
+    } catch (error) {
+      // Reset on failure so retry can work
+      this.initPromise = null;
+      this.isInitialized = false;
+      throw error;
+    }
+
+    return this.initPromise;
+  }
+
+  private async _doInitialize(): Promise<void> {
+    try {
+      console.log('[WalletConnect] Starting initialization...');
+      
       // Dynamically import SignClient at runtime only
       const SignClientModule = await (Function('return import("@walletconnect/sign-client")')() as Promise<any>);
       const SignClient = SignClientModule.default || SignClientModule;
@@ -40,24 +69,44 @@ class WalletConnectClient {
         metadata: this.config.metadata,
       });
 
+      console.log('[WalletConnect] SignClient initialized successfully');
+
       // Restore existing session if available
       const sessions = this.client.session.getAll();
       if (sessions.length > 0) {
         this.session = sessions[sessions.length - 1];
         console.log('[WalletConnect] Restored session:', this.session.topic);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('[WalletConnect] Failed to initialize:', error);
-      throw error;
+      
+      // Provide user-friendly error messages
+      if (error.message?.includes('fetch')) {
+        throw new Error('Unable to connect to WalletConnect servers. Please check your internet connection and try again.');
+      } else if (error.message?.includes('timeout')) {
+        throw new Error('WalletConnect initialization timed out. Please try again.');
+      } else {
+        throw new Error('Failed to initialize WalletConnect. Please try again or use a different wallet option.');
+      }
     }
   }
 
   async connect(chainId: number = 8453): Promise<{ uri: string; approval: () => Promise<any> }> {
+    // Always ensure initialization before connecting
+    try {
+      await this.initialize();
+    } catch (error: any) {
+      console.error('[WalletConnect] Initialization failed before connect:', error);
+      throw new Error(error.message || 'WalletConnect initialization failed. Please try again.');
+    }
+
     if (!this.client) {
-      throw new Error('WalletConnect client not initialized');
+      throw new Error('WalletConnect client failed to initialize. Please refresh and try again.');
     }
 
     try {
+      console.log('[WalletConnect] Starting connection flow...');
+      
       const { uri, approval } = await this.client.connect({
         requiredNamespaces: {
           eip155: {
@@ -75,10 +124,10 @@ class WalletConnectClient {
       });
 
       if (!uri) {
-        throw new Error('Failed to generate WalletConnect URI');
+        throw new Error('Failed to generate connection URI. Please try again.');
       }
 
-      console.log('[WalletConnect] Connection URI generated:', uri);
+      console.log('[WalletConnect] Connection URI generated successfully');
 
       return {
         uri,
@@ -89,9 +138,17 @@ class WalletConnectClient {
           return session;
         },
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('[WalletConnect] Connection failed:', error);
-      throw error;
+      
+      // Provide user-friendly error messages
+      if (error.message?.includes('User rejected')) {
+        throw new Error('Connection rejected by user.');
+      } else if (error.message?.includes('timeout')) {
+        throw new Error('Connection timed out. Please try again.');
+      } else {
+        throw new Error(error.message || 'Failed to connect. Please try again.');
+      }
     }
   }
 
@@ -113,8 +170,18 @@ class WalletConnectClient {
       console.log('[WalletConnect] Disconnected successfully');
     } catch (error) {
       console.error('[WalletConnect] Disconnect failed:', error);
+      // Clear session anyway on error
+      this.session = null;
       throw error;
     }
+  }
+
+  reset(): void {
+    console.log('[WalletConnect] Resetting client state');
+    this.session = null;
+    this.client = null;
+    this.initPromise = null;
+    this.isInitialized = false;
   }
 
   getSession(): WalletConnectSession | null {
@@ -193,5 +260,8 @@ export function getWalletConnectClient(config?: WalletConnectConfig): WalletConn
 }
 
 export function resetWalletConnectClient(): void {
+  if (walletConnectInstance) {
+    walletConnectInstance.reset();
+  }
   walletConnectInstance = null;
 }

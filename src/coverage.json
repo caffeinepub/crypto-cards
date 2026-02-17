@@ -1,103 +1,73 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-17T01:59:56.939Z",
+  "generatedAt": "2026-02-17T02:36:01.219Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
-    "implemented": 4,
+    "total": 3,
+    "implemented": 3,
     "items": [
       {
-        "id": "REQ-1",
-        "summary": "Fix the real-money wallet balance display so it uses the connected wallet’s on-chain balance (from injected provider / WalletConnect) instead of placeholder React Query values, and ensure the UI clearly shows when no wallet is connected.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/WalletSection.tsx",
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/contexts/Web3WalletContext.tsx",
-          "frontend/src/components/Header.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/WalletSection.tsx",
-          "frontend/src/contexts/Web3WalletContext.tsx",
-          "frontend/src/components/Header.tsx"
-        ]
-      },
-      {
-        "id": "REQ-2",
-        "summary": "Fix ETH balance parsing/formatting so large balances do not overflow (avoid Number/parseInt overflow) and balances are computed safely for both injected providers and WalletConnect.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/utils/ethFormat.ts",
-          "frontend/src/hooks/useWeb3Wallet.ts",
-          "frontend/src/lib/walletconnect.ts",
-          "frontend/src/hooks/useWalletConnect.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/utils/ethFormat.ts",
-          "frontend/src/hooks/useWeb3Wallet.ts",
-          "frontend/src/lib/walletconnect.ts"
-        ]
-      },
-      {
-        "id": "REQ-3",
-        "summary": "Harden wallet connect/disconnect flows (MetaMask, Coinbase Wallet, WalletConnect) so connection state, network state (Base chain), and ‘transaction readiness’ state are consistent across refreshes, account changes, and chain changes.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/contexts/Web3WalletContext.tsx",
-          "frontend/src/components/WalletSection.tsx",
-          "frontend/src/components/DepositWithdrawModal.tsx",
-          "frontend/src/components/WalletConnectModal.tsx",
-          "frontend/src/components/WalletPickerModal.tsx",
-          "frontend/src/hooks/useWeb3Wallet.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/contexts/Web3WalletContext.tsx",
-          "frontend/src/components/WalletSection.tsx",
-          "frontend/src/components/DepositWithdrawModal.tsx",
-          "frontend/src/components/WalletConnectModal.tsx",
-          "frontend/src/components/WalletPickerModal.tsx",
-          "frontend/src/hooks/useWeb3Wallet.ts"
-        ]
-      },
-      {
         "id": "REQ-4",
-        "summary": "Ensure deposit/withdraw actions are only enabled when the connected wallet is actually ready to transact on Base, and provide clear, user-facing English error messages when a user cannot proceed (not connected, not ready, wrong network, missing provider).",
+        "summary": "Fix injected (browser) wallet connection so that a non-guest wallet can reliably connect when window.ethereum is present but cannot be identified as MetaMask or Coinbase Wallet (e.g., missing isMetaMask/isCoinbaseWallet flags, multiple providers, or other injected wallets).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/WalletSection.tsx",
-          "frontend/src/components/DepositWithdrawModal.tsx",
-          "frontend/src/hooks/useWeb3Wallet.ts"
+          "frontend/src/hooks/useWeb3Wallet.ts",
+          "frontend/src/contexts/Web3WalletContext.tsx",
+          "frontend/src/components/WalletPickerModal.tsx"
         ],
         "matchedFiles": [
+          "frontend/src/hooks/useWeb3Wallet.ts",
+          "frontend/src/contexts/Web3WalletContext.tsx",
+          "frontend/src/components/WalletPickerModal.tsx"
+        ]
+      },
+      {
+        "id": "REQ-5",
+        "summary": "Make the wallet picker reflect the actual set of usable wallet connection options and provide clear guidance when a wallet is installed but not detected as MetaMask/Coinbase.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useWeb3Wallet.ts",
+          "frontend/src/components/WalletPickerModal.tsx",
+          "frontend/src/components/WalletInstallModal.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useWeb3Wallet.ts",
+          "frontend/src/components/WalletPickerModal.tsx",
+          "frontend/src/components/WalletInstallModal.tsx"
+        ]
+      },
+      {
+        "id": "REQ-6",
+        "summary": "Add user-visible diagnostics for non-guest wallet connection failures to make it obvious why the real wallet is not usable (e.g., wrong network, not transaction-ready, embedded/iframe limitations).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/hooks/useWeb3Wallet.ts",
           "frontend/src/components/WalletSection.tsx",
-          "frontend/src/components/DepositWithdrawModal.tsx",
-          "frontend/src/hooks/useWeb3Wallet.ts"
+          "frontend/src/components/WalletPickerModal.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/hooks/useWeb3Wallet.ts",
+          "frontend/src/components/WalletSection.tsx",
+          "frontend/src/components/WalletPickerModal.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
     "build-request.json",
-    "caffeine.lock.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
     "frontend/src/App.tsx",
-    "frontend/src/components/DepositWithdrawModal.tsx",
-    "frontend/src/components/Header.tsx",
-    "frontend/src/components/WalletConnectModal.tsx",
+    "frontend/src/components/WalletInstallModal.tsx",
     "frontend/src/components/WalletPickerModal.tsx",
     "frontend/src/components/WalletSection.tsx",
-    "frontend/src/config.ts",
     "frontend/src/contexts/Web3WalletContext.tsx",
     "frontend/src/hooks/useWeb3Wallet.ts",
-    "frontend/src/lib/walletconnect.ts",
-    "frontend/src/types/qrcode.d.ts",
-    "frontend/src/utils/ethFormat.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

@@ -7,9 +7,10 @@ import {
   DialogTitle,
 } from './ui/dialog';
 import { Button } from './ui/button';
-import { Copy, ExternalLink, Loader2, X, AlertCircle, QrCode } from 'lucide-react';
+import { Copy, ExternalLink, Loader2, X, AlertCircle, QrCode, AlertTriangle } from 'lucide-react';
 import { useWeb3WalletContext } from '../contexts/Web3WalletContext';
 import { toast } from 'sonner';
+import { isEmbedded, openInNewTab } from '../utils/isEmbedded';
 
 interface WalletConnectModalProps {
   onClose: () => void;
@@ -19,6 +20,7 @@ export function WalletConnectModal({ onClose }: WalletConnectModalProps) {
   const wallet = useWeb3WalletContext();
 
   const uri = wallet.walletConnectUri;
+  const embedded = isEmbedded();
 
   const handleCopyUri = () => {
     if (uri) {
@@ -39,6 +41,16 @@ export function WalletConnectModal({ onClose }: WalletConnectModalProps) {
     wallet.connect('walletconnect');
   };
 
+  const handleCancel = () => {
+    wallet.cancelWalletConnect();
+    onClose();
+  };
+
+  const handleOpenInNewTab = () => {
+    openInNewTab();
+    toast.success('Opening app in new tab...');
+  };
+
   // Auto-close on successful connection
   React.useEffect(() => {
     if (wallet.isConnected && wallet.selectedWallet === 'walletconnect') {
@@ -52,7 +64,7 @@ export function WalletConnectModal({ onClose }: WalletConnectModalProps) {
     : null;
 
   return (
-    <Dialog open onOpenChange={onClose}>
+    <Dialog open onOpenChange={handleCancel}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Connect with WalletConnect</DialogTitle>
@@ -62,6 +74,31 @@ export function WalletConnectModal({ onClose }: WalletConnectModalProps) {
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Embedded/iframe warning */}
+          {embedded && (
+            <div className="flex flex-col gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-medium">Embedded Browser Detected</p>
+                  <p className="mt-1 text-xs opacity-90">
+                    WalletConnect may not work properly in embedded browsers. For best results, open this app in a new browser tab.
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={handleOpenInNewTab}
+                variant="outline"
+                size="sm"
+                className="w-full border-amber-300 bg-white hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-900 dark:hover:bg-amber-800"
+              >
+                <ExternalLink className="mr-2 h-4 w-4" />
+                Open in New Tab
+              </Button>
+            </div>
+          )}
+
+          {/* Error display */}
           {wallet.error && (
             <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200">
               <AlertCircle className="h-4 w-4 flex-shrink-0" />
@@ -69,13 +106,15 @@ export function WalletConnectModal({ onClose }: WalletConnectModalProps) {
             </div>
           )}
 
+          {/* Loading state */}
           {!uri && !wallet.error && (
             <div className="flex flex-col items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="mt-4 text-sm text-muted-foreground">Generating connection URI...</p>
+              <p className="mt-4 text-sm text-muted-foreground">Initializing WalletConnect...</p>
             </div>
           )}
 
+          {/* Connection UI */}
           {uri && !wallet.error && (
             <>
               {qrCodeUrl && (
@@ -151,13 +190,15 @@ export function WalletConnectModal({ onClose }: WalletConnectModalProps) {
             </>
           )}
 
+          {/* Retry button */}
           {wallet.error && (
             <Button onClick={handleRetry} variant="outline" className="w-full">
               Retry Connection
             </Button>
           )}
 
-          <Button variant="ghost" onClick={onClose} className="w-full">
+          {/* Cancel button */}
+          <Button variant="ghost" onClick={handleCancel} className="w-full">
             <X className="mr-2 h-4 w-4" />
             Cancel
           </Button>

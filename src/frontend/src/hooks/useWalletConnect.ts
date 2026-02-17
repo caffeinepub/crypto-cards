@@ -14,6 +14,7 @@ interface UseWalletConnectReturn {
   cancelConnection: () => void;
   getBalance: (address: string) => Promise<string>;
   clearError: () => void;
+  reset: () => void;
 }
 
 export function useWalletConnect(): UseWalletConnectReturn {
@@ -25,11 +26,13 @@ export function useWalletConnect(): UseWalletConnectReturn {
   const [uri, setUri] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const approvalPromiseRef = useRef<Promise<any> | null>(null);
+  const isCancelledRef = useRef(false);
 
   // Initialize WalletConnect client
   useEffect(() => {
     const init = async () => {
       try {
+        console.log('[useWalletConnect] Starting initialization...');
         const client = getWalletConnectClient();
         await client.initialize();
         
@@ -40,9 +43,11 @@ export function useWalletConnect(): UseWalletConnectReturn {
           setIsConnected(true);
           console.log('[useWalletConnect] Restored session:', existingSession);
         }
+        
+        console.log('[useWalletConnect] Initialization complete');
       } catch (err: any) {
         console.error('[useWalletConnect] Initialization failed:', err);
-        setError(err.message || 'Failed to initialize WalletConnect');
+        setError(err.message || 'Failed to initialize WalletConnect. Please try again.');
       } finally {
         setIsInitializing(false);
       }
@@ -55,24 +60,43 @@ export function useWalletConnect(): UseWalletConnectReturn {
     setError(null);
   }, []);
 
-  const cancelConnection = useCallback(() => {
-    console.log('[useWalletConnect] Connection cancelled by user');
+  const reset = useCallback(() => {
+    console.log('[useWalletConnect] Resetting all state');
     setIsConnecting(false);
     setIsAwaitingUser(false);
     setUri(null);
-    setError('Connection cancelled');
+    setError(null);
     approvalPromiseRef.current = null;
+    isCancelledRef.current = false;
   }, []);
 
+  const cancelConnection = useCallback(() => {
+    console.log('[useWalletConnect] Connection cancelled by user');
+    isCancelledRef.current = true;
+    reset();
+  }, [reset]);
+
   const connect = useCallback(async () => {
+    // Reset cancellation flag
+    isCancelledRef.current = false;
+    
     setIsConnecting(true);
     setIsAwaitingUser(false);
     setError(null);
     setUri(null);
 
     try {
+      console.log('[useWalletConnect] Starting connect flow...');
       const client = getWalletConnectClient();
+      
+      // This will trigger initialization if not already done
       const { uri: connectionUri, approval } = await client.connect(8453);
+
+      // Check if cancelled during initialization/connect
+      if (isCancelledRef.current) {
+        console.log('[useWalletConnect] Connect cancelled during setup');
+        return;
+      }
 
       setUri(connectionUri);
       setIsConnecting(false);
@@ -82,6 +106,13 @@ export function useWalletConnect(): UseWalletConnectReturn {
 
       // Wait for user to approve in their wallet
       const approvedSession = await approvalPromiseRef.current;
+
+      // Check if cancelled during approval wait
+      if (isCancelledRef.current) {
+        console.log('[useWalletConnect] Connect cancelled during approval');
+        return;
+      }
+
       const sessionData = client.getSession();
 
       if (sessionData && sessionData.accounts.length > 0) {
@@ -93,11 +124,17 @@ export function useWalletConnect(): UseWalletConnectReturn {
         approvalPromiseRef.current = null;
         console.log('[useWalletConnect] Connected successfully:', sessionData);
       } else {
-        throw new Error('No accounts found in session');
+        throw new Error('No accounts found in session. Please try again.');
       }
     } catch (err: any) {
+      // Don't set error if user cancelled
+      if (isCancelledRef.current) {
+        console.log('[useWalletConnect] Ignoring error after cancellation');
+        return;
+      }
+
       console.error('[useWalletConnect] Connection failed:', err);
-      const errorMessage = err.message || 'Failed to connect via WalletConnect';
+      const errorMessage = err.message || 'Failed to connect via WalletConnect. Please try again.';
       setError(errorMessage);
       setUri(null);
       setIsConnecting(false);
@@ -112,18 +149,18 @@ export function useWalletConnect(): UseWalletConnectReturn {
       await client.disconnect();
       setSession(null);
       setIsConnected(false);
-      setUri(null);
-      setError(null);
-      setIsConnecting(false);
-      setIsAwaitingUser(false);
-      approvalPromiseRef.current = null;
+      reset();
       resetWalletConnectClient();
       console.log('[useWalletConnect] Disconnected');
     } catch (err: any) {
       console.error('[useWalletConnect] Disconnect failed:', err);
-      setError(err.message || 'Failed to disconnect');
+      // Still reset state even if disconnect fails
+      setSession(null);
+      setIsConnected(false);
+      reset();
+      resetWalletConnectClient();
     }
-  }, []);
+  }, [reset]);
 
   const getBalance = useCallback(async (address: string): Promise<string> => {
     try {
@@ -148,5 +185,6 @@ export function useWalletConnect(): UseWalletConnectReturn {
     cancelConnection,
     getBalance,
     clearError,
+    reset,
   };
 }

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useWalletConnect } from './useWalletConnect';
 import { parseWeiToEth } from '../utils/ethFormat';
 
-export type WalletType = 'coinbase' | 'metamask' | 'walletconnect' | 'guest' | null;
+export type WalletType = 'coinbase' | 'metamask' | 'injected' | 'walletconnect' | 'guest' | null;
 
 interface Web3Wallet {
   address: string | null;
@@ -26,6 +26,8 @@ interface Web3Wallet {
   walletConnectUri: string | null;
   clearError: () => void;
   isOnBaseNetwork: boolean;
+  cancelWalletConnect: () => void;
+  retry: () => Promise<void>;
 }
 
 // Base Mainnet Chain ID
@@ -216,79 +218,43 @@ export function useWeb3Wallet(): Web3Wallet {
   // Initialize provider listeners for injected wallets
   useEffect(() => {
     if (hasInjectedProvider() && selectedWallet !== 'walletconnect' && selectedWallet !== 'guest') {
-      const provider = (window as any).ethereum;
+      const ethereum = (window as any).ethereum;
 
-      const handleAccountsChanged = async (accounts: string[]) => {
+      const handleAccountsChanged = (accounts: string[]) => {
         console.log('[Wallet] Accounts changed:', accounts);
-        if (accounts.length > 0) {
-          setAddress(accounts[0]);
-          await fetchBalance(accounts[0]);
-          
-          const isReady = await verifyTransactionReadiness(accounts[0]);
-          setIsTransactionReady(isReady);
-          console.log('[Wallet] Transaction ready after account change:', isReady);
-        } else {
+        if (accounts.length === 0) {
+          console.log('[Wallet] User disconnected wallet');
           setAddress(null);
           setBalance(null);
           setSelectedWallet(null);
           setIsTransactionReady(false);
-          localStorage.removeItem('lastConnectedWallet');
+        } else if (accounts[0] !== address) {
+          console.log('[Wallet] Account switched to:', accounts[0]);
+          setAddress(accounts[0]);
+          fetchBalance(accounts[0]);
+          verifyTransactionReadiness(accounts[0]).then(setIsTransactionReady);
         }
       };
 
-      const handleChainChanged = async (chainIdHex: string) => {
-        const newChainId = parseInt(chainIdHex, 16);
-        console.log('[Wallet] Chain changed:', newChainId);
-        setChainId(newChainId);
-        
+      const handleChainChanged = (newChainId: string) => {
+        const chainIdNum = parseInt(newChainId, 16);
+        console.log('[Wallet] Chain changed to:', chainIdNum);
+        setChainId(chainIdNum);
         if (address) {
-          await fetchBalance(address);
-          const isReady = await verifyTransactionReadiness(address);
-          setIsTransactionReady(isReady);
-          console.log('[Wallet] Transaction ready after chain change:', isReady);
+          fetchBalance(address);
+          verifyTransactionReadiness(address).then(setIsTransactionReady);
         }
       };
 
-      const handleDisconnect = () => {
-        console.log('[Wallet] Disconnected');
-        setAddress(null);
-        setBalance(null);
-        setChainId(null);
-        setSelectedWallet(null);
-        setIsTransactionReady(false);
-        localStorage.removeItem('lastConnectedWallet');
-      };
-
-      provider.on('accountsChanged', handleAccountsChanged);
-      provider.on('chainChanged', handleChainChanged);
-      provider.on('disconnect', handleDisconnect);
+      ethereum.on('accountsChanged', handleAccountsChanged);
+      ethereum.on('chainChanged', handleChainChanged);
 
       return () => {
-        provider.removeListener('accountsChanged', handleAccountsChanged);
-        provider.removeListener('chainChanged', handleChainChanged);
-        provider.removeListener('disconnect', handleDisconnect);
+        ethereum.removeListener('accountsChanged', handleAccountsChanged);
+        ethereum.removeListener('chainChanged', handleChainChanged);
       };
     }
   }, [address, selectedWallet, fetchBalance, verifyTransactionReadiness]);
-
-  // Auto-verify transaction readiness when address and balance are both available
-  useEffect(() => {
-    if (address && balance && !isTransactionReady && selectedWallet !== 'guest' && selectedWallet !== 'walletconnect') {
-      console.log('[Wallet] Address and balance detected, verifying transaction readiness...');
-      const verifyReadiness = async () => {
-        const isReady = await verifyTransactionReadiness(address);
-        setIsTransactionReady(isReady);
-        console.log('[Wallet] Auto-verification result:', isReady);
-      };
-      
-      const timer = setTimeout(verifyReadiness, 800);
-      return () => clearTimeout(timer);
-    }
-  }, [address, balance, selectedWallet, isTransactionReady, verifyTransactionReadiness]);
-
-  const checkWalletAvailability = useCallback(() => {
-    return hasInjectedProvider();
-  }, []);
 
   const clearError = useCallback(() => {
     setError(null);
@@ -297,188 +263,112 @@ export function useWeb3Wallet(): Web3Wallet {
     }
   }, [selectedWallet, walletConnect]);
 
+  const checkWalletAvailability = useCallback((): boolean => {
+    return hasInjectedProvider();
+  }, []);
+
   const dismissWalletNotDetected = useCallback(() => {
     setWalletNotDetected(false);
   }, []);
 
-  const autoConnect = useCallback(async () => {
-    if (isInitialized) return;
-    
-    console.log('[Wallet] Auto-connect initiated');
-    setIsInitialized(true);
-    
-    const lastWallet = localStorage.getItem('lastConnectedWallet');
-    
-    if (lastWallet === 'walletconnect' && walletConnect.isConnected && walletConnect.session) {
-      const wcAddress = walletConnect.session.accounts[0];
-      if (wcAddress) {
-        console.log('[Wallet] Auto-connecting WalletConnect:', wcAddress);
-        setAddress(wcAddress);
-        setSelectedWallet('walletconnect');
-        setChainId(walletConnect.session.chainId);
-        setIsTransactionReady(true);
-        
-        const bal = await walletConnect.getBalance(wcAddress);
-        setBalance(bal);
-      }
-    } else if ((lastWallet === 'coinbase' || lastWallet === 'metamask') && hasInjectedProvider()) {
-      try {
-        setIsConnecting(true);
-        const provider = (window as any).ethereum;
-        
-        const accounts = await provider.request({ method: 'eth_accounts' });
-        
-        if (accounts && accounts.length > 0) {
-          console.log('[Wallet] Found connected account:', accounts[0]);
-          const detectedType = detectWalletType();
-          setAddress(accounts[0]);
-          setSelectedWallet(detectedType || 'coinbase');
-          
-          const chainIdHex = await provider.request({ method: 'eth_chainId' });
-          const currentChainId = parseInt(chainIdHex, 16);
-          setChainId(currentChainId);
-          
-          const fetchedBalance = await fetchBalance(accounts[0]);
-          
-          setTimeout(async () => {
-            const isReady = await verifyTransactionReadiness(accounts[0]);
-            setIsTransactionReady(isReady);
-            console.log('[Wallet] Auto-connected successfully, transaction ready:', isReady);
-            
-            if (!isReady && fetchedBalance) {
-              console.log('[Wallet] Balance available but not ready, retrying...');
-              setTimeout(async () => {
-                const retryReady = await verifyTransactionReadiness(accounts[0]);
-                setIsTransactionReady(retryReady);
-                console.log('[Wallet] Final retry transaction ready:', retryReady);
-              }, 1500);
-            }
-          }, 1000);
-        } else {
-          console.log('[Wallet] No connected accounts found');
-          localStorage.removeItem('lastConnectedWallet');
-        }
-      } catch (err) {
-        console.error('[Wallet] Auto-connect failed:', err);
-        localStorage.removeItem('lastConnectedWallet');
-      } finally {
-        setIsConnecting(false);
-      }
-    } else if (lastWallet === 'guest') {
-      const guestAddress = generateGuestWalletAddress();
-      setAddress(guestAddress);
-      setBalance('10.0000');
-      setChainId(BASE_CHAIN_ID);
-      setSelectedWallet('guest');
-      setIsTransactionReady(true);
-      console.log('[Wallet] Auto-connected guest wallet');
-    }
-  }, [isInitialized, fetchBalance, verifyTransactionReadiness, walletConnect]);
+  const cancelWalletConnect = useCallback(() => {
+    console.log('[Wallet] Cancelling WalletConnect');
+    walletConnect.cancelConnection();
+    setSelectedWallet(null);
+    setShowWalletConnectModal(false);
+    setIsConnecting(false);
+    setError(null);
+  }, [walletConnect]);
 
-  const connect = useCallback(async (walletType: WalletType = 'coinbase') => {
-    console.log('[Wallet] Connect initiated:', walletType);
+  const connect = useCallback(async (walletType?: WalletType) => {
+    const targetWallet = walletType || selectedWallet;
+    
+    if (!targetWallet) {
+      console.error('[Wallet] No wallet type specified');
+      return;
+    }
+
+    console.log('[Wallet] Connecting to:', targetWallet);
     setIsConnecting(true);
     setError(null);
-    setWalletNotDetected(false);
+    setSelectedWallet(targetWallet);
 
     try {
-      if (walletType === 'guest') {
+      if (targetWallet === 'guest') {
         const guestAddress = generateGuestWalletAddress();
         setAddress(guestAddress);
-        setBalance('10.0000');
+        setBalance('0.0000');
         setChainId(BASE_CHAIN_ID);
-        setSelectedWallet('guest');
-        setIsTransactionReady(true);
-        localStorage.setItem('lastConnectedWallet', 'guest');
-        console.log('[Wallet] Guest wallet connected:', guestAddress);
+        setIsTransactionReady(false);
         setIsConnecting(false);
-      } else if (walletType === 'walletconnect') {
-        console.log('[Wallet] Initiating WalletConnect...');
-        setSelectedWallet('walletconnect');
-        setShowWalletConnectModal(true);
-        setIsConnecting(false);
-        
-        // Start WalletConnect connection
-        await walletConnect.connect();
-        
-        // Connection state is now managed by WalletConnect hook
-        if (walletConnect.isConnected && walletConnect.session) {
-          localStorage.setItem('lastConnectedWallet', 'walletconnect');
-        }
-      } else if (walletType === 'coinbase' || walletType === 'metamask') {
-        // Check if on mobile or no injected provider
-        const isMobile = isMobileDevice();
-        const hasProvider = hasInjectedProvider();
-        
-        if (!hasProvider) {
-          console.log('[Wallet] No injected provider detected');
-          setWalletNotDetected(true);
-          setIsConnecting(false);
-          return;
-        }
-
-        if (walletType === 'coinbase' && (isMobile || !hasProvider)) {
-          // Redirect to Coinbase Wallet deep link
-          const currentUrl = window.location.href;
-          const deepLink = `https://go.cb-w.com/dapp?cb_url=${encodeURIComponent(currentUrl)}`;
-          window.location.href = deepLink;
-          return;
-        }
-
-        if (walletType === 'metamask' && isMobile && !hasProvider) {
-          // Redirect to MetaMask deep link
-          const currentUrl = window.location.href;
-          const deepLink = `https://metamask.app.link/dapp/${encodeURIComponent(currentUrl)}`;
-          window.location.href = deepLink;
-          return;
-        }
-
-        // Desktop or injected provider available
-        const provider = (window as any).ethereum;
-        
-        const accounts = await provider.request({ 
-          method: 'eth_requestAccounts' 
-        });
-        
-        if (accounts && accounts.length > 0) {
-          const detectedType = detectWalletType();
-          setAddress(accounts[0]);
-          setSelectedWallet(detectedType || walletType);
-          
-          const chainIdHex = await provider.request({ method: 'eth_chainId' });
-          const currentChainId = parseInt(chainIdHex, 16);
-          setChainId(currentChainId);
-          
-          const fetchedBalance = await fetchBalance(accounts[0]);
-          
-          setTimeout(async () => {
-            const isReady = await verifyTransactionReadiness(accounts[0]);
-            setIsTransactionReady(isReady);
-            console.log('[Wallet] Connected successfully, transaction ready:', isReady);
-            
-            if (!isReady && fetchedBalance) {
-              console.log('[Wallet] Balance available but not ready, retrying...');
-              setTimeout(async () => {
-                const retryReady = await verifyTransactionReadiness(accounts[0]);
-                setIsTransactionReady(retryReady);
-                console.log('[Wallet] Final retry transaction ready:', retryReady);
-              }, 1500);
-            }
-          }, 1000);
-          
-          localStorage.setItem('lastConnectedWallet', walletType);
-        }
-        setIsConnecting(false);
+        console.log('[Wallet] Connected as guest:', guestAddress);
+        return;
       }
+
+      if (targetWallet === 'walletconnect') {
+        setShowWalletConnectModal(true);
+        await walletConnect.connect();
+        // State will be synced via useEffect
+        return;
+      }
+
+      // Injected wallet flow (Coinbase/MetaMask/generic injected)
+      if (!hasInjectedProvider()) {
+        setWalletNotDetected(true);
+        setIsConnecting(false);
+        setError('No wallet detected. Please install a wallet extension.');
+        return;
+      }
+
+      const ethereum = (window as any).ethereum;
+      
+      // Request accounts
+      let accounts: string[];
+      try {
+        accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+      } catch (requestError: any) {
+        // User rejected the connection request
+        if (requestError.code === 4001) {
+          throw new Error('Connection request rejected. Please approve the connection in your wallet.');
+        }
+        throw requestError;
+      }
+      
+      if (accounts.length === 0) {
+        throw new Error('No accounts found. Please unlock your wallet and try again.');
+      }
+
+      const userAddress = accounts[0];
+      setAddress(userAddress);
+
+      const currentChainId = await ethereum.request({ method: 'eth_chainId' });
+      const chainIdNum = parseInt(currentChainId, 16);
+      setChainId(chainIdNum);
+
+      await fetchBalance(userAddress);
+      
+      const isReady = await verifyTransactionReadiness(userAddress);
+      setIsTransactionReady(isReady);
+      
+      setIsConnecting(false);
+      console.log('[Wallet] Connected successfully:', {
+        address: userAddress,
+        chainId: chainIdNum,
+        wallet: targetWallet,
+        transactionReady: isReady
+      });
+
     } catch (err: any) {
       console.error('[Wallet] Connection failed:', err);
-      setError(err.message || 'Failed to connect wallet');
+      const errorMessage = err.message || 'Failed to connect wallet. Please try again.';
+      setError(errorMessage);
       setIsConnecting(false);
+      // Don't clear selectedWallet on error so retry can work
     }
-  }, [fetchBalance, verifyTransactionReadiness, walletConnect]);
+  }, [selectedWallet, fetchBalance, verifyTransactionReadiness, walletConnect]);
 
   const disconnect = useCallback(async () => {
-    console.log('[Wallet] Disconnecting wallet:', selectedWallet);
+    console.log('[Wallet] Disconnecting...');
     
     if (selectedWallet === 'walletconnect') {
       await walletConnect.disconnect();
@@ -491,35 +381,33 @@ export function useWeb3Wallet(): Web3Wallet {
     setIsTransactionReady(false);
     setError(null);
     setShowWalletConnectModal(false);
-    localStorage.removeItem('lastConnectedWallet');
     
-    console.log('[Wallet] Disconnected successfully');
+    if (selectedWallet === 'guest') {
+      sessionStorage.removeItem('guestWalletAddress');
+    }
+    
+    console.log('[Wallet] Disconnected');
   }, [selectedWallet, walletConnect]);
 
   const switchToBase = useCallback(async () => {
     if (!hasInjectedProvider()) {
-      setError('No wallet provider detected');
-      throw new Error('No wallet provider detected');
-    }
-
-    const provider = (window as any).ethereum;
-    if (!provider) {
-      setError('Wallet provider not available');
-      throw new Error('Wallet provider not available');
+      setError('No wallet detected');
+      return;
     }
 
     try {
-      await provider.request({
+      const ethereum = (window as any).ethereum;
+      await ethereum.request({
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: `0x${BASE_CHAIN_ID.toString(16)}` }],
       });
       console.log('[Wallet] Switched to Base network');
       setError(null);
     } catch (switchError: any) {
-      // Chain not added, try adding it
       if (switchError.code === 4902) {
         try {
-          await provider.request({
+          const ethereum = (window as any).ethereum;
+          await ethereum.request({
             method: 'wallet_addEthereumChain',
             params: [
               {
@@ -539,34 +427,79 @@ export function useWeb3Wallet(): Web3Wallet {
           setError(null);
         } catch (addError: any) {
           console.error('[Wallet] Failed to add Base network:', addError);
-          setError('Failed to add Base network');
-          throw new Error('Failed to add Base network');
+          const errorMsg = addError.message || 'Failed to add Base network';
+          setError(errorMsg);
         }
+      } else if (switchError.code === 4001) {
+        setError('Network switch rejected. Please approve the network switch in your wallet.');
       } else {
         console.error('[Wallet] Failed to switch network:', switchError);
-        setError('Failed to switch to Base network');
-        throw new Error('Failed to switch to Base network');
+        const errorMsg = switchError.message || 'Failed to switch to Base network';
+        setError(errorMsg);
       }
     }
   }, []);
 
-  const availableWallets: WalletType[] = ['guest', 'walletconnect'];
+  const retry = useCallback(async () => {
+    console.log('[Wallet] Retrying connection...');
+    if (selectedWallet && selectedWallet !== 'guest') {
+      await connect(selectedWallet);
+    }
+  }, [selectedWallet, connect]);
+
+  const autoConnect = useCallback(async () => {
+    if (isInitialized) return;
+
+    console.log('[Wallet] Attempting auto-connect...');
+
+    try {
+      if (hasInjectedProvider()) {
+        const ethereum = (window as any).ethereum;
+        const accounts = await ethereum.request({ method: 'eth_accounts' });
+
+        if (accounts.length > 0) {
+          const detectedWallet = detectWalletType();
+          const walletToUse = detectedWallet || 'injected';
+          console.log('[Wallet] Auto-connecting to:', walletToUse);
+          setSelectedWallet(walletToUse);
+          setAddress(accounts[0]);
+
+          const currentChainId = await ethereum.request({ method: 'eth_chainId' });
+          const chainIdNum = parseInt(currentChainId, 16);
+          setChainId(chainIdNum);
+
+          await fetchBalance(accounts[0]);
+          
+          const isReady = await verifyTransactionReadiness(accounts[0]);
+          setIsTransactionReady(isReady);
+
+          console.log('[Wallet] Auto-connected successfully');
+        }
+      }
+    } catch (err) {
+      console.error('[Wallet] Auto-connect failed:', err);
+    } finally {
+      setIsInitialized(true);
+    }
+  }, [isInitialized, fetchBalance, verifyTransactionReadiness]);
+
+  // Build available wallets list
+  const availableWallets: WalletType[] = ['walletconnect', 'guest'];
   if (hasInjectedProvider()) {
-    const detected = detectWalletType();
-    if (detected) {
-      availableWallets.unshift(detected);
+    const detectedWallet = detectWalletType();
+    if (detectedWallet) {
+      availableWallets.unshift(detectedWallet);
     } else {
-      availableWallets.unshift('coinbase');
+      // Generic injected wallet available but not specifically identified
+      availableWallets.unshift('injected');
     }
   }
-
-  const isConnected = address !== null && selectedWallet !== null;
 
   return {
     address,
     balance,
     chainId,
-    isConnected,
+    isConnected: !!address,
     isConnecting,
     error,
     walletNotDetected,
@@ -584,5 +517,7 @@ export function useWeb3Wallet(): Web3Wallet {
     walletConnectUri,
     clearError,
     isOnBaseNetwork,
+    cancelWalletConnect,
+    retry,
   };
 }

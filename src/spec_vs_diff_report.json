@@ -1,58 +1,80 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-17T01:59:56.936Z",
-  "summary": "Wallet connection/balance work was implemented via a new unified Web3Wallet context/hook with BigInt-safe ETH parsing utilities and UI gating/messages in WalletSection/DepositWithdrawModal. However, the diff also introduces several unrelated features/changes (game UI, styling, backend actor retry hooks) and appears to violate the constraint against editing frontend/src/hooks/useActor.ts. Evidence of persistent auto-reconnect state across refresh and full disconnect cleanup is not clearly shown in the provided (truncated) diff.",
+  "generatedAt": "2026-02-17T02:36:01.216Z",
+  "summary": "Diff adds UI for a generic “Browser Wallet” option and additional wallet error/diagnostic UI, but the core injected-wallet connect flow (eth_requestAccounts/eth_chainId/balance fetch) and specific failure-state handling are not verifiable from the truncated hook changes. The diff also includes several unrelated feature changes and modifies an explicitly immutable file (useActor.ts), which violates the BuildRequest constraints.",
   "missing_requirements": [
     {
-      "id": "REQ-3",
-      "requirement": "After connecting a wallet, refreshing the page restores the previous connection state when possible (autoConnect) and shows the correct address + chainId; disconnect clears all relevant persisted state (e.g., lastConnectedWallet, WalletConnect session).",
-      "reason": "While Web3WalletProvider calls autoConnect on mount, the diff excerpt does not show any persisted state mechanism (e.g., localStorage 'lastConnectedWallet') being written/read, nor explicit clearing of persisted keys on disconnect. The WalletConnect client shows session restoration, but full persisted-state handling across refresh and disconnect is not clearly evidenced in the truncated changes.",
+      "id": "REQ-4",
+      "requirement": "Selecting the injected wallet option triggers the same connect flow (eth_requestAccounts, eth_chainId, balance fetch) and results in wallet.isConnected === true with an address displayed in the Wallet section.",
+      "reason": "The diff shows the new injected wallet option in the picker, but the actual connect implementation in useWeb3Wallet.ts is truncated and does not provide evidence of calling eth_requestAccounts/eth_chainId and fetching balance for the 'injected' path.",
+      "evidence": [
+        "frontend/src/components/WalletPickerModal.tsx",
+        "frontend/src/hooks/useWeb3Wallet.ts (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "requirement": "If eth_requestAccounts is rejected or fails, the UI shows a clear error message and returns to a non-stuck state (wallet.isConnecting becomes false, user can retry).",
+      "reason": "While error UI and retry/dismiss controls are present, the diff does not show (due to truncation) that eth_requestAccounts rejection is specifically handled by setting isConnecting=false and populating wallet.error for the injected provider connect path.",
+      "evidence": [
+        "frontend/src/components/WalletSection.tsx (truncated)",
+        "frontend/src/hooks/useWeb3Wallet.ts (truncated)"
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "requirement": "When wallet.isConnected is true but wallet.isTransactionReady is false, show actionable guidance that helps the user complete authorization (and do not block retry attempts).",
+      "reason": "The file summary claims this state exists, but the provided WalletSection.tsx diff is truncated before the connected-state rendering; actionable guidance for the 'connected but not transaction-ready' case is not directly evidenced in the shown code.",
+      "evidence": [
+        "frontend/src/components/WalletSection.tsx (truncated)",
+        "frontend-file-summaries.txt (WalletSection summary only, no code)"
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "requirement": "When wallet.isConnected is true but wallet.isOnBaseNetwork is false, keep the existing \"Switch to Base\" action and ensure any switch errors are surfaced to the user (English).",
+      "reason": "The diff includes isOnBaseNetwork in context and mentions wrong-network UI in summaries, but the actual \"Switch to Base\" UI and error surfacing for switch failures are not visible in the truncated WalletSection.tsx/useWeb3Wallet.ts code provided.",
       "evidence": [
         "frontend/src/contexts/Web3WalletContext.tsx",
-        "frontend/src/hooks/useWeb3Wallet.ts (truncated)",
-        "frontend/src/lib/walletconnect.ts (truncated)"
+        "frontend/src/components/WalletSection.tsx (truncated)",
+        "frontend/src/hooks/useWeb3Wallet.ts (truncated)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Modified immutable hook frontend/src/hooks/useActor.ts to add enhanced initialization/retry logic and added a new useActorWithRetry hook.",
-      "reason": "Not requested by any REQ (scope is wallet connections/balances). Also violates the constraint 'Do not edit immutable paths: frontend/src/hooks/useActor.ts'.",
+      "description": "Modified an explicitly immutable file (useActor.ts) with enhanced actor initialization and retry logic.",
+      "reason": "BuildRequest constraints explicitly forbid modifying frontend/src/hooks/useActor.ts, and actor retry enhancements are not requested by REQ-4/5/6.",
       "evidence": [
-        "frontend-file-summaries.txt (useActor.ts and useActorWithRetry.ts entries)"
+        "frontend-file-summaries.txt (\"frontend/src/hooks/useActor.ts\": enhanced actor initialization with retries)",
+        "File diff list includes: frontend/src/hooks/useActor.ts modified"
       ]
     },
     {
-      "description": "Added/expanded playable QuickPlayGame and multiple non-wallet UI copy changes (e.g., removing 'Coming Soon' messaging), plus new/changed styling including colorful gradients and card utilities.",
-      "reason": "Not requested by REQ-1..REQ-4; these are unrelated product/UI enhancements beyond wallet reliability work.",
+      "description": "Added/changed multiple non-wallet features (QuickPlayGame fully playable UI, lobby/tournament placeholders, profile setup logic changes, global CSS gradient/theme utilities).",
+      "reason": "BuildRequest scope is limited to fixing real wallet connection flow and diagnostics; these gameplay/UI/theme changes are not requested.",
       "evidence": [
-        "frontend-file-summaries.txt (QuickPlayGame.tsx, LobbyBrowser.tsx, LobbyRoom.tsx, TournamentSection.tsx, index.css entries)"
+        "frontend-file-summaries.txt (QuickPlayGame, LobbyBrowser, LobbyRoom, TournamentSection, ProfileSetupModal, index.css summaries)"
       ]
     },
     {
-      "description": "Implemented WalletConnect QR code rendering via an external QR server image URL and added a qrcode.d.ts type shim.",
-      "reason": "REQs did not ask for QR rendering via an external service; this is additional implementation detail/functionality beyond stated acceptance criteria.",
+      "description": "Introduced a new hook wrapper useActorWithRetry.ts.",
+      "reason": "Not requested by REQ-4/5/6 and relates to backend connectivity/actor initialization rather than wallet connection flow.",
       "evidence": [
-        "frontend/src/components/WalletConnectModal.tsx",
-        "frontend/src/types/qrcode.d.ts"
+        "frontend-file-summaries.txt (\"frontend/src/hooks/useActorWithRetry.ts\": added)"
       ]
     }
   ],
-  "confidence": 0.68,
+  "confidence": 0.56,
   "changed_files": [
     "frontend-file-summaries.txt",
     "frontend/src/App.tsx",
-    "frontend/src/components/DepositWithdrawModal.tsx",
-    "frontend/src/components/Header.tsx",
-    "frontend/src/components/WalletConnectModal.tsx",
+    "frontend/src/components/WalletInstallModal.tsx",
     "frontend/src/components/WalletPickerModal.tsx",
     "frontend/src/components/WalletSection.tsx",
     "frontend/src/contexts/Web3WalletContext.tsx",
     "frontend/src/hooks/useWeb3Wallet.ts",
-    "frontend/src/lib/walletconnect.ts",
-    "frontend/src/types/qrcode.d.ts",
-    "frontend/src/utils/ethFormat.ts",
     "project_state.json"
   ]
 }

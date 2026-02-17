@@ -1,57 +1,40 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Caffeine-built multiplayer crypto gambling card game app; deployment/publishing and obtaining a shareable public URL are blocked/confusing due to dashboard/chat redirect/UI issues. Current focus includes confirming the live link and verifying wallet functionality.",
-  "architectural_notes": [
-    "App is deployed/published via Caffeine; shareable public access depends on the published URL (ic0.app or assigned caffeine.xyz domain)."
-  ],
+  "summary": "New project",
+  "architectural_notes": [],
   "known_issues": [
-    "Caffeine dashboard appears to redirect/trap user in /chat view; Live tab header (Publish button and ic0.app link) may be inaccessible, preventing retrieval of the canonical ic0.app URL."
+    "Real wallet flow not working while guest wallet flow works (regression/bug to investigate)."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-fix-the-real-money-wallet-balance-display-so-it-uses-the-connected-wallet-s-on-chain-balance-from-injected-provider-walletconnect-instead-of-placeholder-react-query-values-and-ensure-the-ui-clearly-shows-when-no-wallet-is-connected",
-      "title": "Fix the real-money wallet balance display so it uses the connected wallet’s on-chain balance (from injected provider / WalletConnect) instead of placeholder React Query values, and ensure the UI clearly shows when no wallet is connected.",
-      "reqIds": [
-        "REQ-1"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-fix-eth-balance-parsing-formatting-so-large-balances-do-not-overflow-avoid-number-parseint-overflow-and-balances-are-computed-safely-for-both-injected-providers-and-walletconnect",
-      "title": "Fix ETH balance parsing/formatting so large balances do not overflow (avoid Number/parseInt overflow) and balances are computed safely for both injected providers and WalletConnect.",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-harden-wallet-connect-disconnect-flows-metamask-coinbase-wallet-walletconnect-so-connection-state-network-state-base-chain-and-transaction-readiness-state-are-consistent-across-refreshes-account-changes-and-chain-changes",
-      "title": "Harden wallet connect/disconnect flows (MetaMask, Coinbase Wallet, WalletConnect) so connection state, network state (Base chain), and ‘transaction readiness’ state are consistent across refreshes, account changes, and chain changes.",
-      "reqIds": [
-        "REQ-3"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-ensure-deposit-withdraw-actions-are-only-enabled-when-the-connected-wallet-is-actually-ready-to-transact-on-base-and-provide-clear-user-facing-english-error-messages-when-a-user-cannot-proceed-not-connected-not-ready-wrong-network-missing-provider",
-      "title": "Ensure deposit/withdraw actions are only enabled when the connected wallet is actually ready to transact on Base, and provide clear, user-facing English error messages when a user cannot proceed (not connected, not ready, wrong network, missing provider).",
+      "id": "feature-fix-injected-browser-wallet-connection-so-that-a-non-guest-wallet-can-reliably-connect-when-window-ethereum-is-present-but-cannot-be-identified-as-metamask-or-coinbase-wallet-e-g-missing-ismetamask-iscoinbasewallet-flags-multiple-providers-or-other-injected-wallets",
+      "title": "Fix injected (browser) wallet connection so that a non-guest wallet can reliably connect when window.ethereum is present but cannot be identified as MetaMask or Coinbase Wallet (e.g., missing isMetaMask/isCoinbaseWallet flags, multiple providers, or other injected wallets).",
       "reqIds": [
         "REQ-4"
       ],
       "version": 1
-    }
-  ],
-  "new_feature_requests": [
+    },
     {
-      "id": "AR-1",
-      "summary": "Verify wallets work end-to-end in the published/live build (connect, transactions, expected flows)",
-      "reqIds": [],
-      "status": "pending"
+      "id": "feature-make-the-wallet-picker-reflect-the-actual-set-of-usable-wallet-connection-options-and-provide-clear-guidance-when-a-wallet-is-installed-but-not-detected-as-metamask-coinbase",
+      "title": "Make the wallet picker reflect the actual set of usable wallet connection options and provide clear guidance when a wallet is installed but not detected as MetaMask/Coinbase.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-user-visible-diagnostics-for-non-guest-wallet-connection-failures-to-make-it-obvious-why-the-real-wallet-is-not-usable-e-g-wrong-network-not-transaction-ready-embedded-iframe-limitations",
+      "title": "Add user-visible diagnostics for non-guest wallet connection failures to make it obvious why the real wallet is not usable (e.g., wrong network, not transaction-ready, embedded/iframe limitations).",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
     }
   ],
-  "projectName": "Multiplayer Crypto Cards",
+  "new_feature_requests": [],
+  "projectName": "Crypto Cards",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

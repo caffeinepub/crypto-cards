@@ -1,12 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Make wallet connections and real-money balance display reliable and accurate in the live build.
+**Goal:** Fix non-guest (real) wallet connection reliability for injected browser wallets and add clearer user-facing diagnostics and recovery paths when connection/transaction readiness fails.
 
 **Planned changes:**
-- Update WalletSection in real-money mode to show the connected wallet’s actual on-chain balance (via injected provider or WalletConnect) and a clear “not connected” state when no wallet is connected.
-- Fix ETH balance parsing/formatting to be BigInt-safe and consistent across providers, preventing overflow/precision issues.
-- Harden connect/disconnect, auto-restore on refresh, and account/chain change handling so address, chainId (Base 8453), balance, and transaction readiness stay in sync.
-- Gate deposit/withdraw UI so actions are only enabled when in real-money mode and the wallet is connected, transaction-ready, and on Base; show clear English error messages and support switch-to-Base when available.
+- Update wallet detection/picker behavior to offer a generic injected-wallet option (e.g., “Browser Wallet”) when `window.ethereum` exists but the wallet cannot be identified as MetaMask/Coinbase.
+- Ensure the injected-wallet option runs the standard connect flow (`eth_requestAccounts`, `eth_chainId`, balance fetch) and reaches a connected state with the address shown in the Wallet section.
+- Improve error handling so rejected/failed connection attempts show a clear English error, reset the connecting state, and allow retry without refreshing.
+- Add user-visible diagnostics and guidance when connected but not transaction-ready, and when on the wrong network; surface switch-to-network errors and provide a way to dismiss/clear errors and retry.
 
-**User-visible outcome:** Players can connect/disconnect wallets reliably, see correct on-chain balances in real-money mode, and only attempt deposit/withdraw when their wallet is ready on the Base network—with clear guidance when it isn’t.
+**User-visible outcome:** Users with an injected browser wallet can connect even if it isn’t detected as MetaMask/Coinbase, see their address when connected, and receive clear English guidance/errors (with dismissal and retry) for network, authorization, or other connection issues.

@@ -1,135 +1,83 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Multiplayer Crypto Cards — Reliable wallet connections & on-chain balances (live build)",
+  "title": "Fix injected wallet connection fallback + improve wallet picker and diagnostics",
   "requirements": [
     {
-      "id": "REQ-1",
-      "summary": "Show real-mode balance/address from the actually connected wallet (injected provider or WalletConnect) and render an explicit disconnected state (no guest/placeholder leakage).",
+      "id": "REQ-4",
+      "summary": "Support a generic browser-injected wallet connect flow when window.ethereum exists but MetaMask/Coinbase cannot be identified, including multi-provider scenarios and robust error recovery.",
       "acceptanceCriteria": [
-        "In gameMode === 'forReal', the balance shown in WalletSection updates to the connected wallet’s actual balance when available.",
-        "If no wallet is connected, WalletSection shows a clear ‘not connected’ state and does not display the offline default balance as if it were real funds.",
-        "Wallet address display in WalletSection does not throw when address is missing and does not show a guest address for real mode unless the user explicitly selected guest mode."
+        "When a browser-injected provider exists (window.ethereum is defined) but wallet type detection returns null, the wallet picker still offers a connect option for an injected wallet (user-facing label in English).",
+        "Selecting the injected wallet option triggers the same connect flow (eth_requestAccounts, eth_chainId, balance fetch) and results in wallet.isConnected === true with an address displayed in the Wallet section.",
+        "If eth_requestAccounts is rejected or fails, the UI shows a clear error message and returns to a non-stuck state (wallet.isConnecting becomes false, user can retry)."
       ],
       "file_operations": [
-        {
-          "path": "frontend/src/components/WalletSection.tsx",
-          "operation": "modify",
-          "description": "Stop using placeholder React Query balance for real mode. Drive displayed balance from the shared Web3 wallet state (connected address + fetched on-chain balance) and render an explicit 'Not connected' UI when no wallet is connected in forReal mode. Ensure address rendering is null-safe (never slice() a missing address) and only show a guest address in forReal when the selected wallet is explicitly 'guest'."
-        },
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Remove/disable any WalletSection-facing placeholder balance usage for real-money display (keep offline-only behavior intact). Ensure any remaining balance query results are not used to represent on-chain funds in forReal mode."
-        },
-        {
-          "path": "frontend/src/contexts/Web3WalletContext.tsx",
-          "operation": "modify",
-          "description": "Ensure a single shared wallet instance is used across the app so WalletSection receives the same live connection/balance state as Header/modals. Wire the provider value to all consumers via the context hook (no per-component hook instances)."
-        },
-        {
-          "path": "frontend/src/components/Header.tsx",
-          "operation": "modify",
-          "description": "Ensure the header’s wallet connect/status UI reads from the shared Web3 wallet context so the connected state and address used throughout the UI is consistent."
-        }
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "summary": "Make ETH balance fetching/parsing BigInt-safe and format consistently for injected providers and WalletConnect without overflow/precision issues.",
-      "acceptanceCriteria": [
-        "Fetching balance via `eth_getBalance` works for very large balances without precision/overflow errors (use BigInt-safe parsing).",
-        "Displayed ETH balance is formatted consistently (e.g., fixed decimals) and does not become `Infinity`, `NaN`, or a negative number.",
-        "WalletConnect balance display matches the same formatting rules used for injected providers."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/utils/ethFormat.ts",
-          "operation": "create",
-          "description": "Add BigInt-safe utilities for parsing hex wei values and formatting ETH with consistent fixed decimals (e.g., 4) without using Number/parseInt for large values."
-        },
         {
           "path": "frontend/src/hooks/useWeb3Wallet.ts",
           "operation": "modify",
-          "description": "Replace parseInt/Number-based balance conversion for injected providers with BigInt-safe parsing and formatting using the new eth formatting utility. Ensure the stored balance value is consistently formatted across providers."
+          "description": "Add a generic injected wallet option (e.g., 'injected') to the wallet type union and implement a resilient injected-provider selector that works when detection is null (including handling multiple injected providers). Ensure connect() runs the same injected flow for this generic option (eth_requestAccounts, eth_chainId, balance fetch) and that all failures (including user rejection) reliably reset isConnecting=false, preserve a clear English error in wallet.error, and allow immediate retries without refresh."
         },
-        {
-          "path": "frontend/src/lib/walletconnect.ts",
-          "operation": "modify",
-          "description": "Update WalletConnect balance retrieval to parse/format balances using the same BigInt-safe eth formatting utility (avoid Number/parseInt overflow)."
-        },
-        {
-          "path": "frontend/src/hooks/useWalletConnect.ts",
-          "operation": "modify",
-          "description": "Ensure getBalance() returns consistently formatted ETH strings using the shared BigInt-safe formatting rules (matching injected provider formatting)."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Stabilize connect/disconnect, chain/account change handling, and refresh persistence so wallet, network (Base), and transaction-readiness state stay consistent across the app.",
-      "acceptanceCriteria": [
-        "After connecting a wallet, refreshing the page restores the previous connection state when possible (autoConnect) and shows the correct address + chainId.",
-        "Changing accounts in the wallet updates the address and balance in the UI and recalculates transaction readiness.",
-        "Changing chains updates chainId and the UI accurately reflects whether the user is on Base (8453).",
-        "Disconnect clears all relevant persisted state (e.g., lastConnectedWallet, WalletConnect session) and the UI returns to a clean disconnected state without requiring a full page reload."
-      ],
-      "file_operations": [
         {
           "path": "frontend/src/contexts/Web3WalletContext.tsx",
           "operation": "modify",
-          "description": "Call wallet.autoConnect() once on provider mount and expose the shared wallet object to consumers. Ensure the context is the only source of truth (prevents multiple independent hook instances that desync on refresh/account/chain changes)."
-        },
-        {
-          "path": "frontend/src/components/WalletSection.tsx",
-          "operation": "modify",
-          "description": "Switch WalletSection to consume the shared wallet context hook so refresh/account/chain changes immediately reflect in address, chainId/Base status, readiness, and balance."
-        },
-        {
-          "path": "frontend/src/components/DepositWithdrawModal.tsx",
-          "operation": "modify",
-          "description": "Switch DepositWithdrawModal to consume the shared wallet context hook so readiness/network/account changes are reflected while the modal is open, without requiring reload."
-        },
-        {
-          "path": "frontend/src/components/WalletConnectModal.tsx",
-          "operation": "modify",
-          "description": "Switch WalletConnectModal to consume the shared wallet context hook so the URI/approval/connected state stays consistent and the modal can close reliably on successful session restore/approval."
+          "description": "Update context typing to include the new generic injected wallet option and ensure the provider exposes it consistently to the UI."
         },
         {
           "path": "frontend/src/components/WalletPickerModal.tsx",
           "operation": "modify",
-          "description": "Switch WalletPickerModal to consume the shared wallet context hook and ensure it sets/reflects the selected wallet type consistently (including guest vs real wallets) across refreshes."
-        },
-        {
-          "path": "frontend/src/hooks/useWeb3Wallet.ts",
-          "operation": "modify",
-          "description": "Harden disconnect to fully clear persisted state for the selected wallet type (including awaiting WalletConnect disconnect completion), clear errors/readiness/chain, and prevent stale lastConnectedWallet from re-autoconnecting. Ensure account/chain change listeners re-fetch balance and recompute readiness using BigInt-safe balance fetching."
+          "description": "Extend the picker to support selecting the new generic injected wallet option and ensure it triggers the same connect flow and closes appropriately (matching existing injected behavior). All user-facing labels must remain in English."
         }
       ]
     },
     {
-      "id": "REQ-4",
-      "summary": "Gate deposit/withdraw actions on real-mode + connected + transaction-ready + Base chain, and show clear English error messages plus stable switch-to-Base behavior.",
+      "id": "REQ-5",
+      "summary": "Make the wallet picker reflect usable options, including a 'Browser Wallet' option when an injected provider exists but is not MetaMask/Coinbase, while keeping existing behavior when no injected provider exists.",
       "acceptanceCriteria": [
-        "Deposit/Withdraw buttons are disabled unless: (a) gameMode === 'forReal', (b) wallet is connected, (c) wallet is transaction-ready, and (d) chainId === 8453.",
-        "If a user attempts to deposit/withdraw while blocked, they see a clear English explanation (e.g., ‘Connect your wallet’, ‘Switch to Base network’, ‘Open your wallet to complete connection’).",
-        "Switch-to-Base action works when supported by the provider; if not supported or it fails, a clear English error is shown and the UI remains stable (no crashes)."
+        "If window.ethereum exists but detectWalletType() returns null, show a wallet picker button (e.g., \"Browser Wallet\") instead of only showing WalletConnect/Guest.",
+        "If no injected provider exists, keep the existing behavior (WalletConnect + Guest) and show the existing wallet-not-detected messaging when users attempt an injected connection.",
+        "All wallet picker labels and error/help text are in English."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/WalletSection.tsx",
+          "path": "frontend/src/hooks/useWeb3Wallet.ts",
           "operation": "modify",
-          "description": "Keep Deposit/Withdraw disabled per the required gating rules, but also handle blocked user intent by showing clear English feedback (e.g., toast/alert) when actions are attempted while blocked. Wire Switch-to-Base to show success/failure feedback and never crash if the provider is missing/unsupported."
+          "description": "Adjust availableWallets derivation so that when window.ethereum exists and detectWalletType() is null, a generic injected option is included (and surfaced to the picker). Ensure no injected option is presented when no injected provider exists, preserving WalletConnect + Guest behavior."
         },
         {
-          "path": "frontend/src/components/DepositWithdrawModal.tsx",
+          "path": "frontend/src/components/WalletPickerModal.tsx",
           "operation": "modify",
-          "description": "Ensure modal action buttons remain disabled unless connected + transaction-ready + on Base. When blocked, show clear English messages (not connected/not ready/wrong network/missing provider) and keep the UI stable. Use the same Switch-to-Base flow and surface failures clearly."
+          "description": "Update wallet option rendering so that when the generic injected option is available it appears with an English label such as \"Browser Wallet\" (and appropriate icon), while retaining existing options for WalletConnect and Guest. Ensure the UI does not imply MetaMask/Coinbase when the wallet is unknown."
         },
+        {
+          "path": "frontend/src/components/WalletInstallModal.tsx",
+          "operation": "modify",
+          "description": "Refine the English guidance text so that it remains accurate with the new generic injected path (e.g., clarify that any browser wallet extension may work, while still listing MetaMask/Coinbase as examples). Keep behavior consistent with walletNotDetected dismissal."
+        }
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "summary": "Add clear user-visible diagnostics and recovery actions for non-guest wallet connection problems (transaction readiness, wrong network, embedded limitations, and connection errors).",
+      "acceptanceCriteria": [
+        "When wallet.isConnected is true but wallet.isTransactionReady is false, show actionable guidance that helps the user complete authorization (and do not block retry attempts).",
+        "When wallet.isConnected is true but wallet.isOnBaseNetwork is false, keep the existing \"Switch to Base\" action and ensure any switch errors are surfaced to the user (English).",
+        "When connection fails, surface a short error summary to the user (already supported via wallet.error) and include a way to clear/dismiss and retry without refreshing."
+      ],
+      "file_operations": [
         {
           "path": "frontend/src/hooks/useWeb3Wallet.ts",
           "operation": "modify",
-          "description": "Make switchToBase return a success/failure outcome (or throw a user-facing error) so callers can present clear English messages. Ensure missing provider and unsupported switch/add flows are handled gracefully with stable state and readable errors."
+          "description": "Improve error propagation and state for injected network switching and readiness: ensure switchToBase() surfaces failures in wallet.error (English) and does not leave stale connecting state. Optionally add a lightweight retry helper for injected connections (reusing connect(selectedWallet)) without requiring a full page refresh."
+        },
+        {
+          "path": "frontend/src/components/WalletSection.tsx",
+          "operation": "modify",
+          "description": "Add user-visible diagnostics panels for: (1) connected but not transaction-ready (actionable steps + a retry button that re-attempts connection/readiness checks without blocking), (2) connected but wrong network (keep \"Switch to Base\" and display switch errors from wallet.error), and (3) general connection errors (show wallet.error summary with a dismiss/clear action and a retry path). Incorporate embedded/iframe guidance using frontend/src/utils/isEmbedded.ts (e.g., suggest opening in a new tab when embedded limitations may apply). Ensure all text is in English."
+        },
+        {
+          "path": "frontend/src/components/WalletPickerModal.tsx",
+          "operation": "modify",
+          "description": "When wallet.error is present, add an explicit dismiss/clear control (English) so the user can clear the message and retry a connection attempt without refreshing. Ensure errors from injected connect failures (including eth_requestAccounts rejection) remain visible and do not trap the UI in a connecting state."
         }
       ]
     }

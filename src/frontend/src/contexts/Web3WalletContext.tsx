@@ -1,9 +1,8 @@
-import React, { createContext, useContext, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, ReactNode } from 'react';
 import { useWeb3Wallet } from '../hooks/useWeb3Wallet';
+import type { WalletType } from '../hooks/useWeb3Wallet';
 
-type WalletType = 'coinbase' | 'metamask' | 'walletconnect' | 'guest' | null;
-
-interface Web3WalletContextValue {
+interface Web3WalletContextType {
   address: string | null;
   balance: string | null;
   chainId: number | null;
@@ -25,17 +24,14 @@ interface Web3WalletContextValue {
   walletConnectUri: string | null;
   clearError: () => void;
   isOnBaseNetwork: boolean;
+  cancelWalletConnect: () => void;
+  retry: () => Promise<void>;
 }
 
-const Web3WalletContext = createContext<Web3WalletContextValue | undefined>(undefined);
+const Web3WalletContext = createContext<Web3WalletContextType | undefined>(undefined);
 
 export function Web3WalletProvider({ children }: { children: ReactNode }) {
   const wallet = useWeb3Wallet();
-
-  // Auto-connect on mount
-  useEffect(() => {
-    wallet.autoConnect();
-  }, []);
 
   return (
     <Web3WalletContext.Provider value={wallet}>
@@ -46,8 +42,8 @@ export function Web3WalletProvider({ children }: { children: ReactNode }) {
 
 export function useWeb3WalletContext() {
   const context = useContext(Web3WalletContext);
-  if (context === undefined) {
-    throw new Error('useWeb3WalletContext must be used within a Web3WalletProvider');
+  if (!context) {
+    throw new Error('useWeb3WalletContext must be used within Web3WalletProvider');
   }
   return context;
 }

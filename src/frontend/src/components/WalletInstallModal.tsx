@@ -27,15 +27,15 @@ export default function WalletInstallModal() {
 
         <Alert className="border-primary/50 bg-primary/5">
           <AlertDescription>
-            <strong>Recommended:</strong> Install a browser extension wallet for the best experience.
+            <strong>Recommended:</strong> Install a browser extension wallet for the best experience. Any browser wallet will work.
           </AlertDescription>
         </Alert>
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <h3 className="font-semibold text-sm">Browser Extension Wallets</h3>
+            <h3 className="font-semibold text-sm">Popular Browser Wallets</h3>
             <p className="text-xs text-muted-foreground mb-2">
-              Install one of these browser extensions:
+              Install one of these browser extensions (or use any other wallet extension):
             </p>
             <Button
               variant="outline"

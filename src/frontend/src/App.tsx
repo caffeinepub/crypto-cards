@@ -118,7 +118,7 @@ function AppContent() {
             </TabsContent>
 
             <TabsContent value="wallet" className="space-y-6">
-              <WalletSection gameMode={mode} />
+              <WalletSection />
             </TabsContent>
           </Tabs>
         )}
