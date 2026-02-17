@@ -1,3 +1,5 @@
+import { parseWeiToEth } from '../utils/ethFormat';
+
 const WALLETCONNECT_PROJECT_ID = 'a01e2fcef3c6f06f6e8c87c4e0c8e8e8'; // Public project ID for demo
 
 export interface WalletConnectConfig {
@@ -154,8 +156,8 @@ class WalletConnectClient {
   async getBalance(address: string): Promise<string> {
     try {
       const balanceHex = await this.request('eth_getBalance', [address, 'latest']);
-      const balanceWei = parseInt(balanceHex, 16);
-      const balanceEth = (balanceWei / 1e18).toFixed(4);
+      // Use BigInt-safe parsing
+      const balanceEth = parseWeiToEth(balanceHex, 4);
       return balanceEth;
     } catch (error) {
       console.error('[WalletConnect] Failed to fetch balance:', error);

@@ -2,12 +2,12 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-publish-deploy-the-current-draft-build-version-163-to-the-live-public-canister-so-the-application-is-accessible-via-the-public-icp-gateway-url-https-canister-id-ic0-app-not-only-via-the-draft-preview-origin",
-      "featureTitle": "Publish/deploy the current draft build (Version 163) to the Live (public) canister so the application is accessible via the public ICP gateway URL (https://<canister-id>.ic0.app), not only via the draft/preview origin.",
+      "featureId": "feature-fix-the-real-money-wallet-balance-display-so-it-uses-the-connected-wallet-s-on-chain-balance-from-injected-provider-walletconnect-instead-of-placeholder-react-query-values-and-ensure-the-ui-clearly-shows-when-no-wallet-is-connected",
+      "featureTitle": "Fix the real-money wallet balance display so it uses the connected wallet’s on-chain balance (from injected provider / WalletConnect) instead of placeholder React Query values, and ensure the UI clearly shows when no wallet is connected.",
       "files": [
-        "frontend/src/components/AdminSettings.tsx",
-        "frontend/src/components/LivePublishStatus.tsx",
-        "frontend/src/utils/icpLinks.ts"
+        "frontend/src/components/Header.tsx",
+        "frontend/src/components/WalletSection.tsx",
+        "frontend/src/contexts/Web3WalletContext.tsx"
       ],
       "components": [
         "authorization@3.0.0",
@@ -24,6 +24,87 @@
       ],
       "testIds": [
         "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-fix-eth-balance-parsing-formatting-so-large-balances-do-not-overflow-avoid-number-parseint-overflow-and-balances-are-computed-safely-for-both-injected-providers-and-walletconnect",
+      "featureTitle": "Fix ETH balance parsing/formatting so large balances do not overflow (avoid Number/parseInt overflow) and balances are computed safely for both injected providers and WalletConnect.",
+      "files": [
+        "frontend/src/hooks/useWeb3Wallet.ts",
+        "frontend/src/lib/walletconnect.ts",
+        "frontend/src/utils/ethFormat.ts"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "http-outcalls@3.0.0",
+        "stripe@3.0.0",
+        "blob-storage@4.0.0",
+        "qr-code@1.0.0",
+        "camera@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-harden-wallet-connect-disconnect-flows-metamask-coinbase-wallet-walletconnect-so-connection-state-network-state-base-chain-and-transaction-readiness-state-are-consistent-across-refreshes-account-changes-and-chain-changes",
+      "featureTitle": "Harden wallet connect/disconnect flows (MetaMask, Coinbase Wallet, WalletConnect) so connection state, network state (Base chain), and ‘transaction readiness’ state are consistent across refreshes, account changes, and chain changes.",
+      "files": [
+        "frontend/src/components/DepositWithdrawModal.tsx",
+        "frontend/src/components/WalletConnectModal.tsx",
+        "frontend/src/components/WalletPickerModal.tsx",
+        "frontend/src/components/WalletSection.tsx",
+        "frontend/src/contexts/Web3WalletContext.tsx",
+        "frontend/src/hooks/useWeb3Wallet.ts"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "http-outcalls@3.0.0",
+        "stripe@3.0.0",
+        "blob-storage@4.0.0",
+        "qr-code@1.0.0",
+        "camera@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-deposit-withdraw-actions-are-only-enabled-when-the-connected-wallet-is-actually-ready-to-transact-on-base-and-provide-clear-user-facing-english-error-messages-when-a-user-cannot-proceed-not-connected-not-ready-wrong-network-missing-provider",
+      "featureTitle": "Ensure deposit/withdraw actions are only enabled when the connected wallet is actually ready to transact on Base, and provide clear, user-facing English error messages when a user cannot proceed (not connected, not ready, wrong network, missing provider).",
+      "files": [
+        "frontend/src/components/DepositWithdrawModal.tsx",
+        "frontend/src/components/WalletSection.tsx",
+        "frontend/src/hooks/useWeb3Wallet.ts"
+      ],
+      "components": [
+        "authorization@3.0.0",
+        "http-outcalls@3.0.0",
+        "stripe@3.0.0",
+        "blob-storage@4.0.0",
+        "qr-code@1.0.0",
+        "camera@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
       ],
       "confidence": "high"
     }

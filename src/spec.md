@@ -1,11 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Publish/deploy the current draft build (Version 163) to the Live (public) ICP canister so it is accessible via the public ic0.app gateway URL.
+**Goal:** Make wallet connections and real-money balance display reliable and accurate in the live build.
 
 **Planned changes:**
-- Publish Version 163 from draft/preview to the Live (public) canister deployment.
-- Ensure Admin Settings exposes a non-empty “Public ICP Link” pointing to `https://<canister-id>.ic0.app`.
-- Ensure deployment metadata shown in the app reflects the newly published Version 163 build after refresh.
+- Update WalletSection in real-money mode to show the connected wallet’s actual on-chain balance (via injected provider or WalletConnect) and a clear “not connected” state when no wallet is connected.
+- Fix ETH balance parsing/formatting to be BigInt-safe and consistent across providers, preventing overflow/precision issues.
+- Harden connect/disconnect, auto-restore on refresh, and account/chain change handling so address, chainId (Base 8453), balance, and transaction readiness stay in sync.
+- Gate deposit/withdraw UI so actions are only enabled when in real-money mode and the wallet is connected, transaction-ready, and on Base; show clear English error messages and support switch-to-Base when available.
 
-**User-visible outcome:** The app loads successfully from `https://<canister-id>.ic0.app` in a new browser session, and Admin Settings shows the correct Public ICP Link and updated deployment metadata.
+**User-visible outcome:** Players can connect/disconnect wallets reliably, see correct on-chain balances in real-money mode, and only attempt deposit/withdraw when their wallet is ready on the Base network—with clear guidance when it isn’t.

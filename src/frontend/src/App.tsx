@@ -5,16 +5,16 @@ import { useEffect, useState } from 'react';
 import { useInternetIdentity } from './hooks/useInternetIdentity';
 import { useGetCallerUserProfile } from './hooks/useQueries';
 import { useActor } from './hooks/useActor';
-import Header from './components/Header';
+import { Header } from './components/Header';
 import Footer from './components/Footer';
 import ProfileSetupModal from './components/ProfileSetupModal';
 import LobbyBrowser from './components/LobbyBrowser';
 import TournamentSection from './components/TournamentSection';
-import WalletSection from './components/WalletSection';
+import { WalletSection } from './components/WalletSection';
 import AdminSettings from './components/AdminSettings';
 import QuickPlayGame from './components/QuickPlayGame';
 import WalletInstallModal from './components/WalletInstallModal';
-import { Web3WalletProvider, useWeb3WalletContext } from './contexts/Web3WalletContext';
+import { Web3WalletProvider } from './contexts/Web3WalletContext';
 
 export type GameMode = 'forFun' | 'forReal';
 

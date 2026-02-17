@@ -1,205 +1,225 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import React, { useState } from 'react';
+import { Button } from './ui/button';
+import { Wallet, LogOut, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Wallet, ChevronDown, LogOut, ArrowDownToLine, ArrowUpFromLine, Loader2 } from 'lucide-react';
-import { useWeb3Wallet } from '../hooks/useWeb3Wallet';
+} from './ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
+import { WalletPickerModal } from './WalletPickerModal';
+import { WalletConnectModal } from './WalletConnectModal';
 import WalletInstallModal from './WalletInstallModal';
-import WalletConnectModal from './WalletConnectModal';
-import WalletPickerModal from './WalletPickerModal';
-import DepositWithdrawModal from './DepositWithdrawModal';
-import type { GameMode } from '../App';
+import { DepositWithdrawModal } from './DepositWithdrawModal';
+import { useWeb3WalletContext } from '../contexts/Web3WalletContext';
+
+type GameMode = 'forFun' | 'forReal';
 
 interface HeaderProps {
   gameMode: GameMode;
   onGameModeChange: (mode: GameMode) => void;
 }
 
-export default function Header({ gameMode, onGameModeChange }: HeaderProps) {
-  const wallet = useWeb3Wallet();
-  const [depositModalOpen, setDepositModalOpen] = useState(false);
-  const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
-  const [walletPickerOpen, setWalletPickerOpen] = useState(false);
+export function Header({ gameMode, onGameModeChange }: HeaderProps) {
+  const wallet = useWeb3WalletContext();
+  const [showWalletPicker, setShowWalletPicker] = useState(false);
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
 
-  const handleConnectClick = () => {
-    wallet.clearError();
-    setWalletPickerOpen(true);
+  const handleConnectWallet = () => {
+    setShowWalletPicker(true);
   };
 
   const handleDisconnect = () => {
     wallet.disconnect();
   };
 
-  const formatAddress = (addr: string) => {
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-  };
-
-  const gameModeLabel = gameMode === 'forFun' ? 'For Fun' : 'For Real';
-
   return (
     <>
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-3 md:gap-6">
-            <div className="flex items-center gap-2">
-              <img 
-                src="/assets/generated/wallet-icon-transparent.dim_64x64.png" 
-                alt="Logo" 
-                className="w-8 h-8"
-              />
-              <h1 className="text-lg md:text-xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+      <header className="border-b bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 Crypto Cards
               </h1>
             </div>
 
-            {/* Mobile game mode dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+            <div className="flex items-center gap-4">
+              {/* Mobile: Dropdown for game mode */}
+              <div className="md:hidden">
+                <Select value={gameMode} onValueChange={(value) => onGameModeChange(value as GameMode)}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="forFun">For Fun</SelectItem>
+                    <SelectItem value="forReal">For Real</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Desktop: Segmented toggle */}
+              <div className="hidden md:flex items-center gap-1 rounded-lg border bg-muted p-1">
                 <Button
-                  variant="outline"
+                  variant={gameMode === 'forFun' ? 'default' : 'ghost'}
                   size="sm"
-                  className="md:hidden gap-1.5 text-xs"
-                >
-                  {gameModeLabel}
-                  <ChevronDown className="w-3 h-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                <DropdownMenuItem
                   onClick={() => onGameModeChange('forFun')}
-                  className={gameMode === 'forFun' ? 'bg-accent' : ''}
+                  className="rounded-md"
                 >
                   For Fun
-                </DropdownMenuItem>
-                <DropdownMenuItem
+                </Button>
+                <Button
+                  variant={gameMode === 'forReal' ? 'default' : 'ghost'}
+                  size="sm"
                   onClick={() => onGameModeChange('forReal')}
-                  className={gameMode === 'forReal' ? 'bg-accent' : ''}
+                  className="rounded-md"
                 >
                   For Real
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                </Button>
+              </div>
 
-            {/* Desktop game mode toggle */}
-            <div className="hidden md:flex items-center gap-2 bg-muted rounded-full p-1">
-              <Button
-                variant={gameMode === 'forFun' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => onGameModeChange('forFun')}
-                className="rounded-full"
-              >
-                For Fun
-              </Button>
-              <Button
-                variant={gameMode === 'forReal' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => onGameModeChange('forReal')}
-                className="rounded-full"
-              >
-                For Real
-              </Button>
+              {/* Wallet Connection */}
+              {gameMode === 'forReal' && (
+                <>
+                  {!wallet.isConnected ? (
+                    <Button onClick={handleConnectWallet} size="sm" className="hidden sm:flex">
+                      <Wallet className="mr-2 h-4 w-4" />
+                      Connect Wallet
+                    </Button>
+                  ) : (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="hidden sm:flex">
+                          <Wallet className="mr-2 h-4 w-4" />
+                          <span className="hidden md:inline">
+                            {wallet.address ? `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}` : 'Wallet'}
+                          </span>
+                          <span className="md:hidden">Wallet</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel>
+                          <div className="flex flex-col space-y-1">
+                            <p className="text-sm font-medium">Connected Wallet</p>
+                            <p className="text-xs text-muted-foreground font-mono">
+                              {wallet.address ? `${wallet.address.slice(0, 10)}...${wallet.address.slice(-8)}` : 'N/A'}
+                            </p>
+                          </div>
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuLabel className="font-normal">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">Balance</span>
+                            <span className="text-sm font-mono">{wallet.balance || '0.0000'} ETH</span>
+                          </div>
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => setShowDepositModal(true)}>
+                          <ArrowDownToLine className="mr-2 h-4 w-4" />
+                          Deposit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setShowWithdrawModal(true)}>
+                          <ArrowUpFromLine className="mr-2 h-4 w-4" />
+                          Withdraw
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleDisconnect}>
+                          <LogOut className="mr-2 h-4 w-4" />
+                          Disconnect
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+
+                  {/* Mobile wallet button */}
+                  {!wallet.isConnected ? (
+                    <Button onClick={handleConnectWallet} size="sm" className="sm:hidden">
+                      <Wallet className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="sm:hidden">
+                          <Wallet className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel>
+                          <div className="flex flex-col space-y-1">
+                            <p className="text-sm font-medium">Connected Wallet</p>
+                            <p className="text-xs text-muted-foreground font-mono">
+                              {wallet.address ? `${wallet.address.slice(0, 10)}...${wallet.address.slice(-8)}` : 'N/A'}
+                            </p>
+                          </div>
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuLabel className="font-normal">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">Balance</span>
+                            <span className="text-sm font-mono">{wallet.balance || '0.0000'} ETH</span>
+                          </div>
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => setShowDepositModal(true)}>
+                          <ArrowDownToLine className="mr-2 h-4 w-4" />
+                          Deposit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setShowWithdrawModal(true)}>
+                          <ArrowUpFromLine className="mr-2 h-4 w-4" />
+                          Withdraw
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleDisconnect}>
+                          <LogOut className="mr-2 h-4 w-4" />
+                          Disconnect
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </>
+              )}
             </div>
-          </div>
-
-          <div className="flex items-center gap-2 md:gap-3">
-            {gameMode === 'forReal' && (
-              <>
-                {!wallet.isConnected ? (
-                  <Button
-                    onClick={handleConnectClick}
-                    disabled={wallet.isConnecting}
-                    size="sm"
-                    className="gap-1.5 md:gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-xs md:text-sm"
-                  >
-                    {wallet.isConnecting ? (
-                      <>
-                        <Loader2 className="w-3 h-3 md:w-4 md:h-4 animate-spin" />
-                        <span className="hidden sm:inline">Connecting...</span>
-                        <span className="sm:hidden">...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Wallet className="w-3 h-3 md:w-4 md:h-4" />
-                        <span className="hidden sm:inline">Connect Wallet</span>
-                        <span className="sm:hidden">Connect</span>
-                      </>
-                    )}
-                  </Button>
-                ) : (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="gap-1.5 md:gap-2 text-xs md:text-sm">
-                        <Wallet className="w-3 h-3 md:w-4 md:h-4" />
-                        <span className="hidden sm:inline">
-                          {formatAddress(wallet.address || '')}
-                        </span>
-                        {wallet.balance && (
-                          <Badge variant="secondary" className="ml-0.5 md:ml-1 text-xs">
-                            {wallet.balance} ETH
-                          </Badge>
-                        )}
-                        <ChevronDown className="w-3 h-3 md:w-4 md:h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                      <div className="px-2 py-1.5">
-                        <p className="text-xs text-muted-foreground">Connected with</p>
-                        <p className="text-sm font-medium capitalize">{wallet.selectedWallet}</p>
-                      </div>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => setDepositModalOpen(true)}>
-                        <ArrowDownToLine className="w-4 h-4 mr-2" />
-                        Deposit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setWithdrawModalOpen(true)}>
-                        <ArrowUpFromLine className="w-4 h-4 mr-2" />
-                        Withdraw
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={handleDisconnect}>
-                        <LogOut className="w-4 h-4 mr-2" />
-                        Disconnect
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-              </>
-            )}
           </div>
         </div>
       </header>
 
-      <WalletPickerModal 
-        open={walletPickerOpen} 
-        onOpenChange={setWalletPickerOpen} 
-      />
+      {showWalletPicker && (
+        <WalletPickerModal onClose={() => setShowWalletPicker(false)} />
+      )}
 
-      <WalletConnectModal
-        open={wallet.showWalletConnectModal}
-        onOpenChange={wallet.setShowWalletConnectModal}
-      />
+      {wallet.showWalletConnectModal && (
+        <WalletConnectModal
+          onClose={() => wallet.setShowWalletConnectModal(false)}
+        />
+      )}
 
-      <WalletInstallModal />
+      {wallet.walletNotDetected && (
+        <WalletInstallModal />
+      )}
 
-      <DepositWithdrawModal
-        open={depositModalOpen}
-        onOpenChange={setDepositModalOpen}
-        mode="deposit"
-        walletBalance={wallet.balance}
-      />
+      {showDepositModal && (
+        <DepositWithdrawModal
+          type="deposit"
+          onClose={() => setShowDepositModal(false)}
+        />
+      )}
 
-      <DepositWithdrawModal
-        open={withdrawModalOpen}
-        onOpenChange={setWithdrawModalOpen}
-        mode="withdraw"
-        walletBalance={wallet.balance}
-      />
+      {showWithdrawModal && (
+        <DepositWithdrawModal
+          type="withdraw"
+          onClose={() => setShowWithdrawModal(false)}
+        />
+      )}
     </>
   );
 }

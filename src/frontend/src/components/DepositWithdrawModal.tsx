@@ -1,395 +1,245 @@
-import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
-import { ArrowDownToLine, ArrowUpFromLine, Loader2, CheckCircle2, XCircle, AlertCircle, Network } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from './ui/dialog';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { AlertCircle, Loader2, Network } from 'lucide-react';
+import { useWeb3WalletContext } from '../contexts/Web3WalletContext';
 import { toast } from 'sonner';
-import { useWeb3Wallet } from '../hooks/useWeb3Wallet';
+import { useInitiateFlexaDeposit, useGetFlexaDepositsByPrincipal } from '../hooks/useQueries';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { 
-  useInitiateFlexaDeposit, 
-  useGetFlexaDepositsByPrincipal,
-  useCancelFlexaDeposit 
-} from '../hooks/useQueries';
+import { useQuery } from '@tanstack/react-query';
+import { Variant_pending_confirmed_failed } from '../backend';
 
 interface DepositWithdrawModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  mode: 'deposit' | 'withdraw';
-  walletBalance: string | null;
+  type: 'deposit' | 'withdraw';
+  onClose: () => void;
 }
 
-type DepositStatus = 'idle' | 'initiating' | 'pending' | 'confirmed' | 'failed';
-
-export default function DepositWithdrawModal({ 
-  open, 
-  onOpenChange, 
-  mode,
-  walletBalance 
-}: DepositWithdrawModalProps) {
-  const [amount, setAmount] = useState('');
-  const [depositMethod, setDepositMethod] = useState<'flexa' | 'crypto'>('flexa');
-  const [depositStatus, setDepositStatus] = useState<DepositStatus>('idle');
-  const [currentDepositId, setCurrentDepositId] = useState<string | null>(null);
-
-  const wallet = useWeb3Wallet();
+export function DepositWithdrawModal({ type, onClose }: DepositWithdrawModalProps) {
+  const wallet = useWeb3WalletContext();
   const { identity } = useInternetIdentity();
+  const [amount, setAmount] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+
   const initiateDeposit = useInitiateFlexaDeposit();
-  const cancelDeposit = useCancelFlexaDeposit();
-  
-  // Poll for deposit status
-  const { data: deposits } = useGetFlexaDepositsByPrincipal(
+  const { data: deposits = [], refetch: refetchDeposits } = useGetFlexaDepositsByPrincipal(
     identity?.getPrincipal()
   );
 
-  // Check wallet readiness
-  const isWalletReady = wallet.isConnected && wallet.isTransactionReady;
-  const isOnBaseNetwork = wallet.isOnBaseNetwork;
-  const canProceed = isWalletReady && isOnBaseNetwork;
+  // Poll for deposit status every 2 seconds when there are pending deposits
+  useQuery({
+    queryKey: ['depositStatus', deposits],
+    queryFn: async () => {
+      await refetchDeposits();
+      return deposits;
+    },
+    enabled: deposits.some(d => d.status === Variant_pending_confirmed_failed.pending),
+    refetchInterval: 2000,
+  });
 
-  // Monitor deposit status
-  useEffect(() => {
-    if (!currentDepositId || !deposits) return;
-
-    const currentDeposit = deposits.find(d => d.depositId === currentDepositId);
-    if (!currentDeposit) return;
-
-    // Check status as string since it's an enum
-    const statusStr = String(currentDeposit.status);
-    
-    if (statusStr === 'confirmed') {
-      setDepositStatus('confirmed');
-      toast.success('Deposit confirmed! Your balance has been updated.');
-      setTimeout(() => {
-        handleClose();
-      }, 2000);
-    } else if (statusStr === 'failed') {
-      setDepositStatus('failed');
-      toast.error('Deposit failed. Please try again.');
-    } else if (statusStr === 'pending') {
-      setDepositStatus('pending');
+  const handleSwitchToBase = async () => {
+    try {
+      await wallet.switchToBase();
+      toast.success('Switched to Base network');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to switch network');
     }
-  }, [deposits, currentDepositId]);
-
-  const handleClose = () => {
-    setAmount('');
-    setDepositStatus('idle');
-    setCurrentDepositId(null);
-    onOpenChange(false);
   };
 
-  const handleFlexaDeposit = async () => {
-    if (!amount || parseFloat(amount) <= 0) {
-      toast.error('Please enter a valid amount');
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!wallet.isConnected) {
+      toast.error('Please connect your wallet first');
+      return;
+    }
+
+    if (!wallet.isTransactionReady) {
+      toast.error('Please open your wallet to complete connection');
+      return;
+    }
+
+    if (!wallet.isOnBaseNetwork) {
+      toast.error('Please switch to Base network first');
       return;
     }
 
     if (!wallet.address) {
-      toast.error('Wallet not connected');
+      toast.error('Wallet address not available');
       return;
     }
 
-    if (!canProceed) {
-      toast.error('Wallet not ready for transactions');
-      return;
-    }
-
-    try {
-      setDepositStatus('initiating');
-      
-      // Convert amount to wei (18 decimals)
-      const amountWei = BigInt(Math.floor(parseFloat(amount) * 1e18));
-      
-      const intent = await initiateDeposit.mutateAsync({
-        amount: amountWei,
-        walletAddress: wallet.address,
-      });
-
-      setCurrentDepositId(intent.depositId);
-      setDepositStatus('pending');
-      
-      toast.success('Deposit initiated! Waiting for confirmation...');
-    } catch (error: any) {
-      console.error('[Deposit] Failed to initiate:', error);
-      setDepositStatus('failed');
-      toast.error(error.message || 'Failed to initiate deposit');
-    }
-  };
-
-  const handleCancelDeposit = async () => {
-    if (!currentDepositId) return;
-
-    try {
-      await cancelDeposit.mutateAsync(currentDepositId);
-      toast.success('Deposit cancelled');
-      handleClose();
-    } catch (error: any) {
-      console.error('[Deposit] Failed to cancel:', error);
-      toast.error(error.message || 'Failed to cancel deposit');
-    }
-  };
-
-  const handleWithdraw = async () => {
-    if (!amount || parseFloat(amount) <= 0) {
+    const amountNum = parseFloat(amount);
+    if (isNaN(amountNum) || amountNum <= 0) {
       toast.error('Please enter a valid amount');
       return;
     }
 
-    if (!canProceed) {
-      toast.error('Wallet not ready for transactions');
-      return;
+    setIsProcessing(true);
+
+    try {
+      if (type === 'deposit') {
+        const amountWei = BigInt(Math.floor(amountNum * 1e18));
+        const intent = await initiateDeposit.mutateAsync({
+          amount: amountWei,
+          walletAddress: wallet.address,
+        });
+
+        toast.success('Deposit initiated! Waiting for confirmation...');
+        console.log('[Deposit] Intent created:', intent);
+      } else {
+        toast.info('Withdrawal functionality coming soon');
+      }
+    } catch (err: any) {
+      console.error(`[${type}] Failed:`, err);
+      toast.error(err.message || `Failed to ${type}`);
+    } finally {
+      setIsProcessing(false);
     }
-
-    toast.info('Withdrawal functionality coming soon');
   };
 
-  const handleSwitchToBase = async () => {
-    await wallet.switchToBase();
-  };
+  // Check if we can proceed
+  const canProceed = wallet.isConnected && wallet.isTransactionReady && wallet.isOnBaseNetwork;
 
-  const getProgressValue = () => {
-    switch (depositStatus) {
-      case 'initiating':
-        return 25;
-      case 'pending':
-        return 50;
-      case 'confirmed':
-        return 100;
-      case 'failed':
-        return 0;
+  // Helper function to get status label
+  const getStatusLabel = (status: Variant_pending_confirmed_failed): string => {
+    switch (status) {
+      case Variant_pending_confirmed_failed.pending:
+        return 'pending';
+      case Variant_pending_confirmed_failed.confirmed:
+        return 'confirmed';
+      case Variant_pending_confirmed_failed.failed:
+        return 'failed';
       default:
-        return 0;
+        return 'unknown';
+    }
+  };
+
+  // Helper function to get status color class
+  const getStatusColorClass = (status: Variant_pending_confirmed_failed): string => {
+    switch (status) {
+      case Variant_pending_confirmed_failed.confirmed:
+        return 'text-green-600';
+      case Variant_pending_confirmed_failed.failed:
+        return 'text-red-600';
+      case Variant_pending_confirmed_failed.pending:
+        return 'text-amber-600';
+      default:
+        return 'text-gray-600';
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog open onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {mode === 'deposit' ? (
-              <>
-                <ArrowDownToLine className="w-5 h-5" />
-                Deposit Funds
-              </>
-            ) : (
-              <>
-                <ArrowUpFromLine className="w-5 h-5" />
-                Withdraw Funds
-              </>
-            )}
-          </DialogTitle>
+          <DialogTitle className="capitalize">{type}</DialogTitle>
           <DialogDescription>
-            {mode === 'deposit' 
-              ? 'Add funds to your in-game balance' 
-              : 'Withdraw funds from your in-game balance'}
+            {type === 'deposit'
+              ? 'Add funds to your wallet'
+              : 'Withdraw funds from your wallet'}
           </DialogDescription>
         </DialogHeader>
 
-        {/* Wallet readiness checks */}
-        {!isWalletReady && (
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Open your wallet to complete the connection before proceeding
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {isWalletReady && !isOnBaseNetwork && (
-          <Alert>
-            <Network className="h-4 w-4" />
-            <AlertDescription className="flex items-center justify-between">
-              <span>Switch to Base network to continue</span>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleSwitchToBase}
-                className="ml-2"
-              >
-                Switch to Base
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {mode === 'deposit' && depositStatus === 'idle' && (
-          <Tabs value={depositMethod} onValueChange={(v) => setDepositMethod(v as 'flexa' | 'crypto')}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="flexa">Flexa</TabsTrigger>
-              <TabsTrigger value="crypto">Crypto</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="flexa" className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="amount">Amount (ETH)</Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  step="0.0001"
-                  placeholder="0.0000"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  disabled={!canProceed}
-                />
-                {walletBalance && (
-                  <p className="text-xs text-muted-foreground">
-                    Wallet balance: {walletBalance} ETH
-                  </p>
-                )}
-              </div>
-
-              <Alert>
-                <AlertDescription>
-                  Flexa allows you to deposit using various payment methods including credit cards and bank transfers
-                </AlertDescription>
-              </Alert>
-
-              <Button
-                className="w-full gap-2"
-                onClick={handleFlexaDeposit}
-                disabled={!canProceed || initiateDeposit.isPending}
-              >
-                {initiateDeposit.isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Initiating...
-                  </>
-                ) : (
-                  <>
-                    <ArrowDownToLine className="w-4 h-4" />
-                    Deposit with Flexa
-                  </>
-                )}
-              </Button>
-            </TabsContent>
-
-            <TabsContent value="crypto" className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="crypto-amount">Amount (ETH)</Label>
-                <Input
-                  id="crypto-amount"
-                  type="number"
-                  step="0.0001"
-                  placeholder="0.0000"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  disabled={!canProceed}
-                />
-                {walletBalance && (
-                  <p className="text-xs text-muted-foreground">
-                    Wallet balance: {walletBalance} ETH
-                  </p>
-                )}
-              </div>
-
-              <Alert>
-                <AlertDescription>
-                  Direct crypto deposits coming soon
-                </AlertDescription>
-              </Alert>
-
-              <Button
-                className="w-full gap-2"
-                disabled
-              >
-                <ArrowDownToLine className="w-4 h-4" />
-                Deposit Crypto (Coming Soon)
-              </Button>
-            </TabsContent>
-          </Tabs>
-        )}
-
-        {mode === 'deposit' && depositStatus !== 'idle' && (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Deposit Status</span>
-                {depositStatus === 'confirmed' && (
-                  <CheckCircle2 className="w-5 h-5 text-green-500" />
-                )}
-                {depositStatus === 'failed' && (
-                  <XCircle className="w-5 h-5 text-destructive" />
-                )}
-                {(depositStatus === 'initiating' || depositStatus === 'pending') && (
-                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                )}
-              </div>
-              <Progress value={getProgressValue()} className="h-2" />
-              <p className="text-xs text-muted-foreground capitalize">
-                {depositStatus === 'initiating' && 'Initiating deposit...'}
-                {depositStatus === 'pending' && 'Waiting for confirmation...'}
-                {depositStatus === 'confirmed' && 'Deposit confirmed!'}
-                {depositStatus === 'failed' && 'Deposit failed'}
-              </p>
-            </div>
-
-            {depositStatus === 'pending' && (
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={handleCancelDeposit}
-                disabled={cancelDeposit.isPending}
-              >
-                {cancelDeposit.isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    Cancelling...
-                  </>
-                ) : (
-                  'Cancel Deposit'
-                )}
-              </Button>
-            )}
-
-            {depositStatus === 'failed' && (
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  setDepositStatus('idle');
-                  setCurrentDepositId(null);
-                }}
-              >
-                Try Again
-              </Button>
-            )}
+        {!wallet.isConnected && (
+          <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+            <AlertCircle className="h-4 w-4 flex-shrink-0" />
+            <p>Connect your wallet first</p>
           </div>
         )}
 
-        {mode === 'withdraw' && (
-          <div className="space-y-4">
+        {wallet.isConnected && !wallet.isTransactionReady && (
+          <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+            <AlertCircle className="h-4 w-4 flex-shrink-0" />
+            <p>Open your wallet to complete connection</p>
+          </div>
+        )}
+
+        {wallet.isConnected && wallet.isTransactionReady && !wallet.isOnBaseNetwork && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+              <Network className="h-4 w-4 flex-shrink-0" />
+              <p>Switch to Base network to continue</p>
+            </div>
+            <Button onClick={handleSwitchToBase} variant="outline" className="w-full">
+              <Network className="mr-2 h-4 w-4" />
+              Switch to Base
+            </Button>
+          </div>
+        )}
+
+        {canProceed && (
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="withdraw-amount">Amount (ETH)</Label>
+              <Label htmlFor="amount">Amount (ETH)</Label>
               <Input
-                id="withdraw-amount"
+                id="amount"
                 type="number"
                 step="0.0001"
+                min="0"
                 placeholder="0.0000"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                disabled={!canProceed}
+                disabled={isProcessing}
               />
             </div>
 
-            <Alert>
-              <AlertDescription>
-                Withdrawals will be sent to your connected wallet address
-              </AlertDescription>
-            </Alert>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Available Balance</span>
+              <span className="font-mono">{wallet.balance || '0.0000'} ETH</span>
+            </div>
 
-            <Button
-              className="w-full gap-2"
-              onClick={handleWithdraw}
-              disabled={!canProceed}
-            >
-              <ArrowUpFromLine className="w-4 h-4" />
-              Withdraw Funds
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={isProcessing}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isProcessing || !amount}
+                className="flex-1"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  `${type === 'deposit' ? 'Deposit' : 'Withdraw'}`
+                )}
+              </Button>
+            </div>
+          </form>
+        )}
+
+        {deposits.length > 0 && (
+          <div className="mt-4 space-y-2">
+            <h4 className="text-sm font-medium">Recent Deposits</h4>
+            <div className="space-y-1">
+              {deposits.slice(0, 3).map((deposit) => (
+                <div
+                  key={deposit.depositId}
+                  className="flex items-center justify-between rounded-lg border p-2 text-xs"
+                >
+                  <span className="font-mono">{(Number(deposit.amount) / 1e18).toFixed(4)} ETH</span>
+                  <span className={getStatusColorClass(deposit.status)}>
+                    {getStatusLabel(deposit.status)}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </DialogContent>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useWalletConnect } from './useWalletConnect';
+import { parseWeiToEth } from '../utils/ethFormat';
 
 export type WalletType = 'coinbase' | 'metamask' | 'walletconnect' | 'guest' | null;
 
@@ -15,7 +16,7 @@ interface Web3Wallet {
   selectedWallet: WalletType;
   isTransactionReady: boolean;
   connect: (walletType?: WalletType) => Promise<void>;
-  disconnect: () => void;
+  disconnect: () => Promise<void>;
   switchToBase: () => Promise<void>;
   autoConnect: () => Promise<void>;
   checkWalletAvailability: () => boolean;
@@ -143,8 +144,8 @@ export function useWeb3Wallet(): Web3Wallet {
           method: 'eth_getBalance',
           params: [addr, 'latest'],
         });
-        const balanceWei = parseInt(balanceHex, 16);
-        const balanceValue = (balanceWei / 1e18).toFixed(4);
+        // Use BigInt-safe parsing
+        const balanceValue = parseWeiToEth(balanceHex, 4);
         console.log('[Wallet] Balance fetched:', balanceValue, 'ETH');
         setBalance(balanceValue);
         return balanceValue;
@@ -476,11 +477,11 @@ export function useWeb3Wallet(): Web3Wallet {
     }
   }, [fetchBalance, verifyTransactionReadiness, walletConnect]);
 
-  const disconnect = useCallback(() => {
+  const disconnect = useCallback(async () => {
     console.log('[Wallet] Disconnecting wallet:', selectedWallet);
     
     if (selectedWallet === 'walletconnect') {
-      walletConnect.disconnect();
+      await walletConnect.disconnect();
     }
     
     setAddress(null);
@@ -492,35 +493,37 @@ export function useWeb3Wallet(): Web3Wallet {
     setShowWalletConnectModal(false);
     localStorage.removeItem('lastConnectedWallet');
     
-    console.log('[Wallet] Disconnected and state cleared');
+    console.log('[Wallet] Disconnected successfully');
   }, [selectedWallet, walletConnect]);
 
   const switchToBase = useCallback(async () => {
     if (!hasInjectedProvider()) {
       setError('No wallet provider detected');
-      return;
+      throw new Error('No wallet provider detected');
+    }
+
+    const provider = (window as any).ethereum;
+    if (!provider) {
+      setError('Wallet provider not available');
+      throw new Error('Wallet provider not available');
     }
 
     try {
-      const provider = (window as any).ethereum;
-      
-      // Try to switch to Base network
       await provider.request({
         method: 'wallet_switchEthereumChain',
-        params: [{ chainId: '0x2105' }], // Base Mainnet (8453 in hex)
+        params: [{ chainId: `0x${BASE_CHAIN_ID.toString(16)}` }],
       });
-      
       console.log('[Wallet] Switched to Base network');
+      setError(null);
     } catch (switchError: any) {
-      // This error code indicates that the chain has not been added to the wallet
+      // Chain not added, try adding it
       if (switchError.code === 4902) {
         try {
-          const provider = (window as any).ethereum;
           await provider.request({
             method: 'wallet_addEthereumChain',
             params: [
               {
-                chainId: '0x2105',
+                chainId: `0x${BASE_CHAIN_ID.toString(16)}`,
                 chainName: 'Base',
                 nativeCurrency: {
                   name: 'Ethereum',
@@ -533,26 +536,41 @@ export function useWeb3Wallet(): Web3Wallet {
             ],
           });
           console.log('[Wallet] Added and switched to Base network');
+          setError(null);
         } catch (addError: any) {
           console.error('[Wallet] Failed to add Base network:', addError);
-          setError('Failed to add Base network to wallet');
+          setError('Failed to add Base network');
+          throw new Error('Failed to add Base network');
         }
       } else {
-        console.error('[Wallet] Failed to switch to Base network:', switchError);
+        console.error('[Wallet] Failed to switch network:', switchError);
         setError('Failed to switch to Base network');
+        throw new Error('Failed to switch to Base network');
       }
     }
   }, []);
+
+  const availableWallets: WalletType[] = ['guest', 'walletconnect'];
+  if (hasInjectedProvider()) {
+    const detected = detectWalletType();
+    if (detected) {
+      availableWallets.unshift(detected);
+    } else {
+      availableWallets.unshift('coinbase');
+    }
+  }
+
+  const isConnected = address !== null && selectedWallet !== null;
 
   return {
     address,
     balance,
     chainId,
-    isConnected: !!address,
+    isConnected,
     isConnecting,
     error,
     walletNotDetected,
-    availableWallets: ['coinbase', 'metamask', 'walletconnect', 'guest'],
+    availableWallets,
     selectedWallet,
     isTransactionReady,
     connect,

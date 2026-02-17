@@ -1,47 +1,95 @@
 {
   "kind": "build_request",
-  "title": "Publish current draft build to Live canister",
+  "title": "Make wallet connections and balances work reliably in the live build",
+  "projectName": "Multiplayer Crypto Cards",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Publish/deploy the current draft build (Version 163) to the Live (public) canister so the application is accessible via the public ICP gateway URL (https://<canister-id>.ic0.app), not only via the draft/preview origin.",
-      "target": "unknown",
+      "text": "Fix the real-money wallet balance display so it uses the connected wallet’s on-chain balance (from injected provider / WalletConnect) instead of placeholder React Query values, and ensure the UI clearly shows when no wallet is connected.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-20"
         ],
         "quotes": [
-          "Yes"
+          "And make sure wallets work"
         ]
       },
       "acceptanceCriteria": [
-        "After publish, the app loads successfully from https://<canister-id>.ic0.app in a new browser session.",
-        "In the Admin Settings area, the Public ICP Link is available and points to https://<canister-id>.ic0.app (not empty/unavailable).",
-        "Backend deployment metadata (e.g., build time and/or build identifier if provided) reflects the newly published Version 163 build when refreshed."
+        "In gameMode === 'forReal', the balance shown in WalletSection updates to the connected wallet’s actual balance when available.",
+        "If no wallet is connected, WalletSection shows a clear ‘not connected’ state and does not display the offline default balance as if it were real funds.",
+        "Wallet address display in WalletSection does not throw when address is missing and does not show a guest address for real mode unless the user explicitly selected guest mode."
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Fix ETH balance parsing/formatting so large balances do not overflow (avoid Number/parseInt overflow) and balances are computed safely for both injected providers and WalletConnect.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-20"
+        ],
+        "quotes": [
+          "And make sure wallets work"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Fetching balance via `eth_getBalance` works for very large balances without precision/overflow errors (use BigInt-safe parsing).",
+        "Displayed ETH balance is formatted consistently (e.g., fixed decimals) and does not become `Infinity`, `NaN`, or a negative number.",
+        "WalletConnect balance display matches the same formatting rules used for injected providers."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Harden wallet connect/disconnect flows (MetaMask, Coinbase Wallet, WalletConnect) so connection state, network state (Base chain), and ‘transaction readiness’ state are consistent across refreshes, account changes, and chain changes.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-20"
+        ],
+        "quotes": [
+          "And make sure wallets work"
+        ]
+      },
+      "acceptanceCriteria": [
+        "After connecting a wallet, refreshing the page restores the previous connection state when possible (autoConnect) and shows the correct address + chainId.",
+        "Changing accounts in the wallet updates the address and balance in the UI and recalculates transaction readiness.",
+        "Changing chains updates chainId and the UI accurately reflects whether the user is on Base (8453).",
+        "Disconnect clears all relevant persisted state (e.g., lastConnectedWallet, WalletConnect session) and the UI returns to a clean disconnected state without requiring a full page reload."
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Ensure deposit/withdraw actions are only enabled when the connected wallet is actually ready to transact on Base, and provide clear, user-facing English error messages when a user cannot proceed (not connected, not ready, wrong network, missing provider).",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-20"
+        ],
+        "quotes": [
+          "And make sure wallets work"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Deposit/Withdraw buttons are disabled unless: (a) gameMode === 'forReal', (b) wallet is connected, (c) wallet is transaction-ready, and (d) chainId === 8453.",
+        "If a user attempts to deposit/withdraw while blocked, they see a clear English explanation (e.g., ‘Connect your wallet’, ‘Switch to Base network’, ‘Open your wallet to complete connection’).",
+        "Switch-to-Base action works when supported by the provider; if not supported or it fails, a clear English error is shown and the UI remains stable (no crashes)."
       ]
     }
   ],
   "constraints": [
-    "Do not modify immutable frontend paths listed in SYSTEM_CONTEXT.",
-    "Keep backend as a single Motoko actor (backend/main.mo); only introduce migration.mo if an upgrade requires state migration."
+    "Do not edit files under frontend/src/components/ui (Shadcn UI components must be composed, not modified).",
+    "Do not edit immutable paths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx.",
+    "Backend must remain a single Motoko actor in backend/main.mo; only add migration.mo if a stable-state upgrade is required."
   ],
   "nonGoals": [
-    "Do not add new gameplay, wallet, admin, or UI features as part of this request.",
-    "Do not change backend data models or business logic solely to support publishing."
+    "Implementing real on-chain deposit/withdraw settlement logic on the Internet Computer canister (no external chain indexing or custody system is in scope unless explicitly specified).",
+    "Adding third-party authentication providers (only Internet Identity is supported).",
+    "Adding real-time wallet event streaming beyond provider events (no WebSockets)."
   ],
   "imageRequirements": {
     "required": [],
     "edits": []
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
   }
 }
